@@ -1,0 +1,161 @@
+StateSpace BridgeAndTree {
+    position: BETWEEN_BRIDGE_AND_TREE | MOVE_TO_BRIDGE | MOVE_TO_TREE 
+        | AT_TREE | AT_BRIDGE | EXIT;
+    tree_is: UNSET | BECOMING_PINE | PINE | BECOMING_DECIDUOUS | DECIDUOUS;
+    bridge_is: UNSET | BECOMING_WOOD | WOOD | BECOMING_CONCRETE | CONCRETE;
+    atmosphere_is: UNSET | BECOMING_SHADY | MALEVOLENT_SHADE | BECOMING_LIGHTFUL
+        | GLORIOUS_LIGHT_CONE;
+}
+
+StartFor BridgeAndTree {
+    position: BETWEEN_BRIDGE_AND_TREE;
+    tree_is: UNSET;
+    bridge_is: UNSET;
+    atmosphere_is: UNSET;
+}
+
+TransitionOn BridgeAndTree {
+    current: {
+        position: BETWEEN_BRIDGE_AND_TREE;
+    }
+    next: {
+        position: MOVE_TO_BRIDGE;
+    }
+}
+
+TransitionOn BridgeAndTree {
+    current: {
+        position: BETWEEN_BRIDGE_AND_TREE;
+    }
+    next: {
+        position: MOVE_TO_TREE;
+    }
+}
+
+TransitionOn BridgeAndTree {
+    current: {
+        position: MOVE_TO_TREE;
+    }
+    next: {
+        position: BETWEEN_BRIDGE_AND_TREE;
+    }
+}
+
+TransitionOn BridgeAndTree {
+    current: {
+        position: MOVE_TO_TREE;
+    }
+    next: {
+        position: AT_TREE;
+    }
+}
+
+TransitionOn BridgeAndTree {
+    current: {
+        position: MOVE_TO_TREE;
+        tree_is: UNSET;
+    }
+    next: {
+        tree_is: BECOMING_PINE;
+    }
+}
+
+TransitionOn BridgeAndTree {
+    current: {
+        position: MOVE_TO_TREE;
+        tree_is: UNSET;
+    }
+    next: {
+        tree_is: BECOMING_DECIDUOUS;
+    }
+}
+
+TransitionOn BridgeAndTree {
+    current: {
+        position: AT_TREE;
+    }
+    next: {
+        position: MOVE_TO_TREE;
+    }
+}
+
+TransitionOn BridgeAndTree {
+    current: {
+        position: AT_TREE;
+    }
+    next: {
+        position: EXIT;
+    }
+}
+
+TransitionOn BridgeAndTree {
+    current: {
+        position: MOVE_TO_BRIDGE;
+    }
+    next: {
+        position: BETWEEN_BRIDGE_AND_TREE;
+    }
+}
+
+TransitionOn BridgeAndTree {
+    current: {
+        position: MOVE_TO_BRIDGE;
+    }
+    next: {
+        position: AT_BRIDGE;
+    }
+}
+
+TransitionOn BridgeAndTree {
+    current: {
+        position: AT_BRIDGE;
+    }
+    next: {
+        position: MOVE_TO_BRIDGE;
+    }
+}
+
+TransitionOn BridgeAndTree {
+    current: {
+        position: AT_BRIDGE;
+    }
+    next: {
+        position: EXIT;
+    }
+}
+
+TransitionOn BridgeAndTree {
+    current: {
+        tree_is: BECOMING_PINE;
+    }
+    next: {
+        tree_is: PINE;
+    }
+}
+
+TransitionOn BridgeAndTree {
+    current: {
+        tree_is: BECOMING_DECIDUOUS;
+    }
+    next: {
+        tree_is: DECIDUOUS;
+    }
+}
+
+TransitionOn BridgeAndTree {
+    current: {
+        bridge_is: BECOMING_WOOD;
+    }
+    next: {
+        bridge_is: WOOD;
+    }
+}
+
+TransitionOn BridgeAndTree {
+    current: {
+        bridge_is: BECOMING_CONCRETE;
+    }
+    next: {
+        bridge_is: WOOD;
+    }
+}
