@@ -44,6 +44,16 @@
         DD_INIT_ARRAY(a);                                                           \
     } while (0)
 
+typedef struct {
+    int length;
+    char* chars;
+} DDString;
+
 void* reallocate(void* ptr, size_t old_size, size_t new_size);
+DDString* copy_string(const char* chars, int length);
+void free_string(DDString* dd_string);
+
+DD_DEF_ARRAY(DDString, DDString);
+DD_DEF_ARRAY(DDArrDDString, DDArrDDString);
 
 #endif

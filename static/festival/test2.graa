@@ -1,0 +1,6 @@
+StateSpace Test {
+    shape: Oval | Square | Rectangle | Circle;
+    color: Yellow | Fuschia | Lime;
+    texture: Bumpy | Smooth;
+}
+

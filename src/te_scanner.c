@@ -5,24 +5,24 @@
 
 #include <string.h>
 
-#include "fe_scanner.h"
+#include "te_scanner.h"
 
-void init_scanner(Scanner* scanner, const char* source) {
+void init_te_scanner(TEScanner* scanner, const char* source) {
     scanner->start = source;
     scanner->current = source;
     scanner->line = 1;
 }
 
-static bool is_at_end(Scanner* scanner) {
+static bool is_at_end(TEScanner* scanner) {
     return *(scanner->current) == '\0';
 }
 
-static char advance(Scanner* scanner) {
+static char advance(TEScanner* scanner) {
     scanner->current++;
     return scanner->current[-1];
 }
 
-static char peek(Scanner* scanner) {
+static char peek(TEScanner* scanner) {
     return *(scanner->current);
 }
 
@@ -41,7 +41,7 @@ static bool is_digit(char c) {
     return c >= '0' && c <= '9';
 }
 
-static void skip_whitespace(Scanner* scanner) {
+static void skip_whitespace(TEScanner* scanner) {
     for (;;) {
         char c = peek(scanner);
         switch (c) {
@@ -60,8 +60,8 @@ static void skip_whitespace(Scanner* scanner) {
     }
 }
 
-static Token make_token(Scanner* scanner, TokenType token_type) {
-    Token token;
+static TEToken make_token(TEScanner* scanner, TETokenType token_type) {
+    TEToken token;
     token.type = token_type;
     token.start = scanner->start;
     token.length = (int)(scanner->current - scanner->start);
@@ -69,8 +69,8 @@ static Token make_token(Scanner* scanner, TokenType token_type) {
     return token;
 }
 
-static Token error_token(Scanner* scanner, const char* message) {
-    Token token;
+static TEToken error_token(TEScanner* scanner, const char* message) {
+    TEToken token;
     token.type = TOKEN_ERROR;
     token.start = message;
     token.length = (int)strlen(message);
@@ -78,8 +78,8 @@ static Token error_token(Scanner* scanner, const char* message) {
     return token;
 }
 
-static TokenType check_keyword(Scanner* scanner, int start, int length,
-        const char* rest, TokenType type) {
+static TETokenType check_keyword(TEScanner* scanner, int start, int length,
+        const char* rest, TETokenType type) {
     if (scanner->current - scanner->start == start + length &&
             memcmp(scanner->start + start, rest, length) == 0) {
         return type;
@@ -87,7 +87,7 @@ static TokenType check_keyword(Scanner* scanner, int start, int length,
     return TOKEN_IDENTIFIER;
 }
 
-static TokenType identifier_type(Scanner* scanner) {
+static TETokenType identifier_type(TEScanner* scanner) {
     switch (scanner->start[0]) {
         case 'S': return check_keyword(scanner, 1, 9, "tateSpace", TOKEN_STATE_SPACE);
         case 'T': return check_keyword(scanner, 1, 11, "ransitionOn", TOKEN_TRANSITION_ON);
@@ -95,12 +95,12 @@ static TokenType identifier_type(Scanner* scanner) {
     return TOKEN_IDENTIFIER;
 }
 
-static Token identifier(Scanner* scanner) {
+static TEToken identifier(TEScanner* scanner) {
     while (is_alpha(peek(scanner)) || is_digit(peek(scanner))) advance(scanner);
     return make_token(scanner, identifier_type(scanner));
 }
 
-Token scan_token(Scanner* scanner) {
+TEToken scan_te_token(TEScanner* scanner) {
     skip_whitespace(scanner);
     scanner->start = scanner->current;
 

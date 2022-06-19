@@ -1,5 +1,5 @@
-#ifndef fe_scanner_h
-#define fe_scanner_h
+#ifndef te_scanner_h
+#define te_scanner_h
 
 #include <stdbool.h>
 #include "dd_data.h"
@@ -8,7 +8,7 @@ typedef struct {
     const char* start;
     const char* current;
     int line;
-} Scanner;
+} TEScanner;
 
 typedef enum {
     TOKEN_LEFT_BRACE, TOKEN_RIGHT_BRACE,
@@ -21,17 +21,17 @@ typedef enum {
     TOKEN_TRANSITION_ON,
 
     TOKEN_ERROR, TOKEN_EOF,
-} TokenType;
+} TETokenType;
 
 typedef struct {
-    TokenType type;
+    TETokenType type;
     const char* start;
     int length;
     int line;
-} Token;
-DD_DEF_ARRAY(Token, Tok);
+} TEToken;
+DD_DEF_ARRAY(TEToken, Tok);
 
-void init_scanner(Scanner* scanner, const char* source);
-Token scan_token(Scanner* scanner);
+void init_te_scanner(TEScanner* scanner, const char* source);
+TEToken scan_te_token(TEScanner* scanner);
 
 #endif
