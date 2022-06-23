@@ -89,8 +89,14 @@ static TETokenType check_keyword(TEScanner* scanner, int start, int length,
 
 static TETokenType identifier_type(TEScanner* scanner) {
     switch (scanner->start[0]) {
-        case 'S': return check_keyword(scanner, 1, 9, "tateSpace", TOKEN_STATE_SPACE);
-        case 'T': return check_keyword(scanner, 1, 11, "ransitionOn", TOKEN_TRANSITION_ON);
+        case 'S': return check_keyword(scanner, 1, 9, "tateSpace",
+						  TOKEN_STATE_SPACE);
+        case 'T': return check_keyword(scanner, 1, 11, "ransitionOn",
+						  TOKEN_TRANSITION_ON);
+		case 'c': return check_keyword(scanner, 1, 6, "urrent",
+						  TOKEN_CURRENT);
+		case 'n': return check_keyword(scanner, 1, 3, "ext",
+						  TOKEN_NEXT);
     }
     return TOKEN_IDENTIFIER;
 }

@@ -4,3 +4,20 @@ StateSpace Test {
     texture: Bumpy | Smooth;
 }
 
+TransitionOn Test {
+    current {
+        shape: Oval;
+    }
+    next {
+        shape: Square;
+    }
+}
+
+TransitionOn Test {
+    current {
+        shape: Square | Rectangle;
+    }
+    next {
+        shape: Circle;
+    }
+}
