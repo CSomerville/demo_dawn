@@ -39,6 +39,33 @@ static int key_index_tendril(TETendril *tendril, DDString *key) {
 	return -1;
 }
 
+int int_from_values(DDArrInt *values, TETendrilLegend *leg) {
+	int i, j, n, m;
+	n = 0;
+	for (i = 0; i < values->size; i++) {
+		m = 1;
+		for (j = 0; j < i; j++) {
+			m = m * leg->values.elems[j].size;
+		}
+		n += m * values->elems[i];
+	}
+	return n;
+}
+
+void values_from_int(int x, DDArrInt *vals, TETendrilLegend *leg) {
+	int i, j, n, m;
+
+	n = x;
+	for (i = leg->keys.size - 1; i >= 0; i--) {
+		m = 1;
+		for (j = 0; j < i; j++) {
+			m = m * leg->values.elems[j].size;
+		}
+		DD_ADD_ARRAY(vals, n / m);
+		n = n % m;
+	}
+}
+
 static void error_at(TEToken *token, const char *msg) {
     fprintf(stderr, "[line %d] Error", token->line);
     if (token->type == TOKEN_EOF) {

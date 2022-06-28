@@ -44,6 +44,48 @@
         DD_INIT_ARRAY(a);                                                           \
     } while (0)
 
+#define DD_DEF_QUEUE(T, name) 			\
+	typedef struct DDQNode##name { 		\
+		T val;							\
+		struct DDQNode##name *next;		\
+	} DDQNode##name; 					\
+	typedef struct {					\
+		DDQNode##name *first;			\
+		DDQNode##name *last;			\
+	} DDQ##name;	
+
+#define DD_INIT_QUEUE(q)				\
+	do {								\
+		(q)->first = NULL;				\
+		(q)->last = NULL;				\
+	} while (0)
+
+#define DD_QUEUE_EMPTY(q)				\
+	((q)->first == NULL)
+
+#define DD_ENQUEUE(name, q, v)				\
+	do {									\
+		DDQNode##name *qn;					\
+		qn = malloc(sizeof(*((q)->first)));	\
+		qn->val = v;						\
+		if (DD_QUEUE_EMPTY(q)) {			\
+			qn->next = NULL;				\
+			(q)->first = qn;				\
+			(q)->last = qn;					\
+		} else {							\
+			(q)->last->next = qn;			\
+			(q)->last = qn;					\
+		}									\
+	} while (0)
+
+#define DD_DEQUEUE(name, q, v)				\
+	do {									\
+		v = (q)->first->val;				\
+		DDQNode##name *qn = (q)->first;		\
+		(q)->first = qn->next;				\
+		free(qn);							\
+	} while (0)
+
 typedef struct {
     int length;
     char* chars;
@@ -53,7 +95,10 @@ void* reallocate(void* ptr, size_t old_size, size_t new_size);
 DDString* copy_string(const char* chars, int length);
 void free_string(DDString* dd_string);
 
-DD_DEF_ARRAY(DDString, DDString);
-DD_DEF_ARRAY(DDArrDDString, DDArrDDString);
+DD_DEF_ARRAY(DDString, DDString)
+DD_DEF_ARRAY(DDArrDDString, DDArrDDString)
+DD_DEF_ARRAY(int, Int)
+DD_DEF_ARRAY(DDArrInt, DDArrInt)
+DD_DEF_QUEUE(int, Int)
 
 #endif

@@ -1,3 +1,6 @@
+#ifndef te_tendril_h
+#define te_tendril_h
+
 #include "dd_data.h"
 #include "te_scanner.h"
 
@@ -16,6 +19,10 @@ typedef struct {
     TETendrilLegend legend;
 } TETendril;
 
-DD_DEF_ARRAY(TETendril, TETendril);
+DD_DEF_ARRAY(TETendril, TETendril)
 
 void parse_tendrils(TEScanner *scanner, DDArrTETendril *tendrils);
+int int_from_values(DDArrInt *values, TETendrilLegend *leg);
+void values_from_int(int x, DDArrInt *vals, TETendrilLegend *leg);
+
+#endif
