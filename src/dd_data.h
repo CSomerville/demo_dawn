@@ -26,6 +26,15 @@
         (a)->elems = NULL;                                                          \
     } while (0)
 
+#define DD_INIT_ARRAY_SIZE(a, s)							\
+	do {													\
+		(a)->size = s;										\
+		(a)->capacity = s;									\
+		(a)->elems = reallocate((a)->elems, 0,				\
+				sizeof(*((a)->elems)) * (a)->capacity);		\
+	} while (0)
+		
+
 #define DD_ADD_ARRAY(a, k)                                                          \
     do {                                                                            \
         if ((a)->capacity < (a)->size + 1) {                                        \

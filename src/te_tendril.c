@@ -16,6 +16,20 @@ static void init_te_tendril(TETendril *tendril) {
     init_te_tendril_legend(&leg);
     tendril->legend = leg;
     tendril->name = *copy_string("", 0);
+	tendril->graph = NULL;
+}
+
+static void init_tendril_graph(TETendril *tendril) {
+	int i, c;
+	DDGraph *g;
+
+	c = 1;
+	for (i = 0; i < tendril->legend.values.size; i++) {
+		c = c * tendril->legend.values.elems[i].size;
+	}
+	g = DD_ALLOCATE(DDGraph, 1);
+	initialize_graph(g, true, c);
+	tendril->graph = g;
 }
 
 static TETendril* lookup_tendril_by_name(DDArrTETendril *tendrils,
@@ -39,6 +53,17 @@ static int key_index_tendril(TETendril *tendril, DDString *key) {
 	return -1;
 }
 
+static int value_index_tendril(TETendril *tendril, DDString *value,
+		int key_idx) {
+	int i;
+	for (i = 0; i < tendril->legend.values.elems[key_idx].size; i++) {
+		if (strcmp(tendril->legend.values.elems[key_idx].elems[i].chars,
+					value->chars) == 0)
+			return i;
+	}
+	return -1;
+}
+
 int int_from_values(DDArrInt *values, TETendrilLegend *leg) {
 	int i, j, n, m;
 	n = 0;
@@ -52,6 +77,7 @@ int int_from_values(DDArrInt *values, TETendrilLegend *leg) {
 	return n;
 }
 
+/* vals must be sufficiently large to hold leg->keys.size values */
 void values_from_int(int x, DDArrInt *vals, TETendrilLegend *leg) {
 	int i, j, n, m;
 
@@ -61,8 +87,120 @@ void values_from_int(int x, DDArrInt *vals, TETendrilLegend *leg) {
 		for (j = 0; j < i; j++) {
 			m = m * leg->values.elems[j].size;
 		}
-		DD_ADD_ARRAY(vals, n / m);
+		vals->elems[i] = n / m;
 		n = n % m;
+	}
+}
+
+static void cart_concat(DDArrDDArrInt *acc, DDArrInt *next) {
+	int i, j, k;
+	DDArrInt tmp;
+	DDArrDDArrInt copy;
+	
+	DD_INIT_ARRAY(&copy);
+	for (i = 0; i < acc->size; i++) {
+		DD_INIT_ARRAY(&tmp);
+		for (j = 0; j < acc->elems[i].size; j++) {
+			DD_ADD_ARRAY(&tmp, acc->elems[i].elems[j]);
+		}
+		DD_ADD_ARRAY(&copy, tmp);
+	}
+
+	DD_INIT_ARRAY(acc);
+	for (i = 0; i < copy.size; i++) {
+		for (j = 0; j < next->size; j++) {
+			DD_INIT_ARRAY(&tmp);
+			for (k = 0; k < copy.elems[i].size; k++) {
+				DD_ADD_ARRAY(&tmp, copy.elems[i].elems[k]);
+			}
+			DD_ADD_ARRAY(&tmp, next->elems[j]);
+			DD_ADD_ARRAY(acc, tmp);
+		}
+	}
+}
+
+static void add_transitions(TETendril *tendril, DDArrDDArrDDString *current, 
+		DDArrDDArrDDString *next) {
+	DDArrInt tmp;
+	DDArrDDArrInt cur;
+	DDArrDDArrInt final_cur;
+	DDArrInt ne;
+	int i, j, n, x, y;
+	bool found;
+
+	DD_INIT_ARRAY(&tmp);
+	DD_INIT_ARRAY(&cur);
+	DD_INIT_ARRAY(&final_cur);
+	DD_INIT_ARRAY(&ne);
+
+	for (i = 0; i < tendril->legend.keys.size; i++) {
+		found = false;
+		for (j = 0; j < current->size; j++) {
+			if (strcmp(tendril->legend.keys.elems[i].chars,
+						current->elems[j].elems[0].chars) == 0) {
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			for (j = 0; j < tendril->legend.values.elems[i].size; j++) {
+				DD_ADD_ARRAY(&tmp, j);
+			}
+		} else {
+			for (j = 1; j < current->elems[i].size; j++) {
+				n = value_index_tendril(tendril, &(current->elems[i].elems[j]), i);
+				DD_ADD_ARRAY(&tmp, n);
+			}
+		}
+		DD_ADD_ARRAY(&cur, tmp);
+		DD_INIT_ARRAY(&tmp);
+	}
+
+	for (i = 0; i < tendril->legend.keys.size; i++) {
+		found = false;
+		for (j = 0; j < next->size; j++) {
+			if (strcmp(tendril->legend.keys.elems[i].chars,
+						current->elems[j].elems[0].chars) == 0) {
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			DD_ADD_ARRAY(&ne, -1);
+		} else {
+			n = value_index_tendril(tendril, &(next->elems[i].elems[1]), i);
+			DD_ADD_ARRAY(&ne, n);
+		}
+	}
+
+	if (cur.size == 1) {
+		DD_ADD_ARRAY(&final_cur, cur.elems[0]);
+	} else {
+		for (i = 0; i < cur.elems[0].size; i++) {
+			DD_INIT_ARRAY(&tmp);
+			DD_ADD_ARRAY(&tmp, cur.elems[0].elems[i]);
+			DD_ADD_ARRAY(&final_cur, tmp);
+		}
+		for (i = 1; i < cur.size; i++) {
+			cart_concat(&final_cur, &(cur.elems[i]));
+		}
+	}
+
+	for (i = 0; i < final_cur.size; i++) {
+		DD_INIT_ARRAY(&tmp);
+		x = int_from_values(&(final_cur.elems[i]), &(tendril->legend));
+		for (j = 0; j < final_cur.elems[i].size; j++) {
+			if (ne.elems[j] == -1) {
+				DD_ADD_ARRAY(&tmp, final_cur.elems[i].elems[j]);
+			} else {
+				DD_ADD_ARRAY(&tmp, ne.elems[j]);
+			}
+		}
+		y = int_from_values(&tmp, &(tendril->legend));
+
+		if (!(edge_in_graph(tendril->graph, x, y))) {
+			insert_edge(tendril->graph, x, y, tendril->graph->directed);
+		}
 	}
 }
 
@@ -149,6 +287,7 @@ static void parse_state_space(TEParser *parser, TEScanner *scanner,
 
     consume(parser, scanner, TOKEN_RIGHT_BRACE, "Expecting right brace");
     
+	init_tendril_graph(&tendril);
     DD_ADD_ARRAY(tendrils, tendril);
 }
 
@@ -291,7 +430,7 @@ static void parse_transition_on(TEParser *parser, TEScanner *scanner,
 		printf("\n");
 	}
 	
-	/*add_transitions(tendril, &intermediate_representation);*/
+	add_transitions(tendril, &current, &next);
 
     consume(parser, scanner, TOKEN_RIGHT_BRACE, "Expecting right brace");
 }

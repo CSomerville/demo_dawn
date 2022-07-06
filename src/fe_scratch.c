@@ -5,6 +5,7 @@
 #include "te_scanner.h"
 #include "te_tendril.h"
 #include "dd_data.h"
+#include "dd_graph.h"
 
 int main(void) {
 	char* source = read_file("./static/festival/test2.graa");
@@ -32,5 +33,8 @@ int main(void) {
 			}
 			printf("\n");
 		}
+		print_graph(tendrils.elems[i].graph);
 	}
+
+	
 }

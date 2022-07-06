@@ -21,3 +21,12 @@ TransitionOn Test {
         shape: Circle;
     }
 }
+
+TransitionOn Test {
+    current {
+        shape: Rectangle | Circle;
+    }
+    next {
+        color: Yellow;
+    }
+}

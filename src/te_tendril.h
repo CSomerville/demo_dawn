@@ -2,6 +2,7 @@
 #define te_tendril_h
 
 #include "dd_data.h"
+#include "dd_graph.h"
 #include "te_scanner.h"
 
 typedef struct {
@@ -17,6 +18,7 @@ typedef struct {
 typedef struct {
     DDString name;
     TETendrilLegend legend;
+	DDGraph *graph;
 } TETendril;
 
 DD_DEF_ARRAY(TETendril, TETendril)
