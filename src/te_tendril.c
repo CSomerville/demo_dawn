@@ -17,6 +17,7 @@ static void init_te_tendril(TETendril *tendril) {
     tendril->legend = leg;
     tendril->name = *copy_string("", 0);
 	tendril->graph = NULL;
+	tendril->start = -1;
 }
 
 static void init_tendril_graph(TETendril *tendril) {
@@ -396,7 +397,7 @@ static void parse_transition_on(TEParser *parser, TEScanner *scanner,
     tendril = lookup_tendril_by_name(tendrils, name_to_find);
 
     if (tendril == NULL) {
-        // lol do something.
+		error_at(&(parser->previous), "Tendril name not found.");
     }
 
     consume(parser, scanner, TOKEN_LEFT_BRACE, "Expecting left brace");
@@ -415,26 +416,67 @@ static void parse_transition_on(TEParser *parser, TEScanner *scanner,
 		error_at(&(parser->current), "Expecting current or next");
 	}
 
-	// tmp test
-	for (int i = 0; i < current.size; i++) {
-		for (int j = 0; j < current.elems[i].size; j++) {
-			printf("%s ", current.elems[i].elems[j].chars);
-		}
-		printf("\n");
-	}
-
-	for (int i = 0; i < next.size; i++) {
-		for (int j = 0; j < next.elems[i].size; j++) {
-			printf("%s ", next.elems[i].elems[j].chars);
-		}
-		printf("\n");
-	}
-	
 	add_transitions(tendril, &current, &next);
 
     consume(parser, scanner, TOKEN_RIGHT_BRACE, "Expecting right brace");
 }
 
+void parse_start_on(TEParser *parser, TEScanner *scanner,
+		DDArrTETendril *tendrils) {
+    TETendril *tendril;
+    DDString *tmp_str;
+	DDArrInt vals;
+	int i, n, m;
+
+    consume(parser, scanner, TOKEN_IDENTIFIER,
+			"Transition expecting tendril name");
+    tmp_str = copy_string(parser->previous.start,
+			parser->previous.length);
+    tendril = lookup_tendril_by_name(tendrils, tmp_str);
+
+    if (tendril == NULL) {
+		error_at(&(parser->previous), "Tendril name not found.");
+    }
+
+	vals = *(DDArrInt *)reallocate(NULL, 0, sizeof(DDArrInt));
+	DD_INIT_ARRAY_SIZE(&vals, tendril->legend.keys.size);
+	for (i = 0; i < tendril->legend.keys.size; i++) vals.elems[i] = -1;
+
+    consume(parser, scanner, TOKEN_LEFT_BRACE, "Expecting left brace");
+
+	while (parser->current.type != TOKEN_RIGHT_BRACE) {
+		consume(parser, scanner, TOKEN_IDENTIFIER, "Expecting identifier");
+		tmp_str = copy_string(parser->previous.start,
+				parser->previous.length);
+		n = key_index_tendril(tendril, tmp_str);
+		if (n == -1) {
+			error_at(&(parser->previous), "key not found for tendril");
+		}
+
+		consume(parser, scanner, TOKEN_COLON, "Expecting colon");
+		consume(parser, scanner, TOKEN_IDENTIFIER, "Expecting identifier");
+		tmp_str = copy_string(parser->previous.start,
+				parser->previous.length);
+		m = value_index_tendril(tendril, tmp_str, n);
+		if (m == -1) {
+			error_at(&(parser->previous), "value not found for tendril");
+		}
+
+		vals.elems[n] = m;
+
+		consume(parser, scanner, TOKEN_SEMICOLON, "Expecting semicolon");
+	}
+
+	for (i = 0; i < tendril->legend.keys.size; i++) {
+		if (vals.elems[i] == -1) {
+			fprintf(stderr, "StartOn: missing key");
+			exit(1);
+		}
+	}
+
+	tendril->start = int_from_values(&vals, &(tendril->legend));
+    consume(parser, scanner, TOKEN_RIGHT_BRACE, "Expecting right brace");
+}
 
 void parse_tendrils(TEScanner *scanner, DDArrTETendril *tendrils) {
     TEParser parser;
@@ -453,8 +495,13 @@ void parse_tendrils(TEScanner *scanner, DDArrTETendril *tendrils) {
                 parse_transition_on(&parser, scanner, tendrils);
                 break;
             }
+			case TOKEN_START_ON: {
+				advance(&parser, scanner);
+				parse_start_on(&parser, scanner, tendrils);
+				break;
+			}
             default:
-                error_at(&(parser.current), "Unexpected token.");
+                error_at(&(parser.current), "Uhnexpected token.");
         }
     }
 }

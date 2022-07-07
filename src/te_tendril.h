@@ -19,6 +19,7 @@ typedef struct {
     DDString name;
     TETendrilLegend legend;
 	DDGraph *graph;
+	int start;
 } TETendril;
 
 DD_DEF_ARRAY(TETendril, TETendril)

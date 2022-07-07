@@ -36,5 +36,6 @@ int main(void) {
 		print_graph(tendrils.elems[i].graph);
 	}
 
+	printf("start: %d\n", tendrils.elems[0].start);
 	
 }
