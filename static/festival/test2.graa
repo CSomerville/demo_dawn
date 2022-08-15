@@ -15,6 +15,15 @@ TransitionOn Test {
 
 TransitionOn Test {
     current {
+        shape: Oval;
+    }
+    next {
+        shape: Circle;
+    }
+}
+
+TransitionOn Test {
+    current {
         shape: Square | Rectangle;
     }
     next {
@@ -29,4 +38,25 @@ TransitionOn Test {
     next {
         color: Yellow;
     }
+}
+
+StartOn Test {
+	shape: Oval;
+	color: Lime;
+	texture: Smooth;
+}
+
+ContentOn Test {
+	match {
+		shape: Oval | Square;
+	}
+	content {
+		"blarg for uuuuu";
+		switch color {
+			Yellow: "in yellow";
+			Fuschia: "in fuschia";
+			Lime: "in lime";
+		}
+		"pls";
+	}
 }

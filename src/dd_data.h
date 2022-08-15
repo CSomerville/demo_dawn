@@ -1,6 +1,8 @@
 #ifndef dd_data_h
 #define dd_data_h
 
+#include <stdlib.h>
+
 #define DD_ALLOCATE(type, count) \
     (type*)reallocate(NULL, 0, sizeof(type) * (count))
 
@@ -77,8 +79,8 @@
 		DDQNode##name *qn;					\
 		qn = malloc(sizeof(*((q)->first)));	\
 		qn->val = v;						\
+		qn->next = NULL;					\
 		if (DD_QUEUE_EMPTY(q)) {			\
-			qn->next = NULL;				\
 			(q)->first = qn;				\
 			(q)->last = qn;					\
 		} else {							\
@@ -102,6 +104,7 @@ typedef struct {
 
 void* reallocate(void* ptr, size_t old_size, size_t new_size);
 DDString* copy_string(const char* chars, int length);
+DDString* dd_string_concat(DDString *a, DDString *b);
 void free_string(DDString* dd_string);
 
 DD_DEF_ARRAY(DDString, DDString)

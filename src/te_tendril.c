@@ -11,13 +11,35 @@ static void init_te_tendril_legend(TETendrilLegend *leg) {
     DD_INIT_ARRAY(&(leg->values));
 }
 
+void print_tendril_legend(TETendrilLegend *leg) {
+	int i, j;
+	for (i = 0; i < leg->keys.size; i++) {
+		printf("%s: ", leg->keys.elems[i].chars);
+		for (j = 0; j < leg->values.elems[i].size; j++) {
+			printf("%s ", leg->values.elems[i].elems[j].chars);
+		}
+		printf("\n");
+	}
+}
+
+static void init_tendril_content(TEContent *con) {
+	DD_INIT_ARRAY(&(con->match));
+	DD_INIT_ARRAY(&(con->stat));
+	DD_INIT_ARRAY(&(con->dyn));
+}
+
 static void init_te_tendril(TETendril *tendril) {
     TETendrilLegend leg;
+	DDArrTEContent contents;
+
     init_te_tendril_legend(&leg);
+	DD_INIT_ARRAY(&contents);
+
     tendril->legend = leg;
     tendril->name = *copy_string("", 0);
 	tendril->graph = NULL;
 	tendril->start = -1;
+	tendril->contents = contents;
 }
 
 static void init_tendril_graph(TETendril *tendril) {
@@ -33,7 +55,7 @@ static void init_tendril_graph(TETendril *tendril) {
 	tendril->graph = g;
 }
 
-static TETendril* lookup_tendril_by_name(DDArrTETendril *tendrils,
+TETendril* lookup_tendril_by_name(DDArrTETendril *tendrils,
 		DDString *name) {
     int i;
     for (i = 0; i < tendrils->size; i++) {
@@ -44,7 +66,7 @@ static TETendril* lookup_tendril_by_name(DDArrTETendril *tendrils,
     return NULL;
 }
 
-static int key_index_tendril(TETendril *tendril, DDString *key) {
+int key_index_tendril(TETendril *tendril, DDString *key) {
 	int i;
 	for (i = 0; i < tendril->legend.keys.size; i++) {
 		if (strcmp(tendril->legend.keys.elems[i].chars,
@@ -54,8 +76,7 @@ static int key_index_tendril(TETendril *tendril, DDString *key) {
 	return -1;
 }
 
-static int value_index_tendril(TETendril *tendril, DDString *value,
-		int key_idx) {
+int value_index_tendril(TETendril *tendril, DDString *value, int key_idx) {
 	int i;
 	for (i = 0; i < tendril->legend.values.elems[key_idx].size; i++) {
 		if (strcmp(tendril->legend.values.elems[key_idx].elems[i].chars,
@@ -91,6 +112,17 @@ void values_from_int(int x, DDArrInt *vals, TETendrilLegend *leg) {
 		vals->elems[i] = n / m;
 		n = n % m;
 	}
+}
+
+int te_transition(TETendril *tendril, int current) {
+	int r;
+	DDArrInt next = tendril->graph->edges.elems[current];
+	if (next.size == 0) {
+		fprintf(stderr, "no transitions for %d\n", current);
+		exit(1);
+	}
+	r = rand() % next.size;
+	return next.elems[r];
 }
 
 static void cart_concat(DDArrDDArrInt *acc, DDArrInt *next) {
@@ -380,25 +412,33 @@ static void parse_current(TEParser *parser, TEScanner *scanner,
 			"current expecting right brace");
 }
 
+static TETendril *parse_tendril_name(TEParser *parser, TEScanner *scanner,
+		DDArrTETendril *tendrils) {
+	TETendril *tendril;
+	DDString *tmp_str;
+	
+	consume(parser, scanner, TOKEN_IDENTIFIER, "expecting tendril name.");
+	tmp_str = copy_string(parser->previous.start,
+			parser->previous.length);
+	tendril = lookup_tendril_by_name(tendrils, tmp_str);
+
+	if (tendril == NULL) {
+		error_at(&(parser->previous), "Tendril name not found.");
+	}
+	free_string(tmp_str);
+	return tendril;
+}
+
 static void parse_transition_on(TEParser *parser, TEScanner *scanner,
         DDArrTETendril *tendrils) {
     TETendril *tendril;
-    DDString *name_to_find;
 	DDArrDDArrDDString next;
 	DDArrDDArrDDString current;
 
 	DD_INIT_ARRAY(&next);
     DD_INIT_ARRAY(&current);
 
-    consume(parser, scanner, TOKEN_IDENTIFIER,
-			"Transition expecting tendril name");
-    name_to_find = copy_string(parser->previous.start,
-			parser->previous.length);
-    tendril = lookup_tendril_by_name(tendrils, name_to_find);
-
-    if (tendril == NULL) {
-		error_at(&(parser->previous), "Tendril name not found.");
-    }
+	tendril = parse_tendril_name(parser, scanner, tendrils);
 
     consume(parser, scanner, TOKEN_LEFT_BRACE, "Expecting left brace");
 
@@ -428,15 +468,7 @@ void parse_start_on(TEParser *parser, TEScanner *scanner,
 	DDArrInt vals;
 	int i, n, m;
 
-    consume(parser, scanner, TOKEN_IDENTIFIER,
-			"Transition expecting tendril name");
-    tmp_str = copy_string(parser->previous.start,
-			parser->previous.length);
-    tendril = lookup_tendril_by_name(tendrils, tmp_str);
-
-    if (tendril == NULL) {
-		error_at(&(parser->previous), "Tendril name not found.");
-    }
+	tendril = parse_tendril_name(parser, scanner, tendrils);
 
 	vals = *(DDArrInt *)reallocate(NULL, 0, sizeof(DDArrInt));
 	DD_INIT_ARRAY_SIZE(&vals, tendril->legend.keys.size);
@@ -478,6 +510,213 @@ void parse_start_on(TEParser *parser, TEScanner *scanner,
     consume(parser, scanner, TOKEN_RIGHT_BRACE, "Expecting right brace");
 }
 
+
+static void parse_match(TEParser *parser, TEScanner  *scanner,
+		TETendril *tendril, TEContent *content) {
+	DDArrDDArrInt match_patterns;
+	DDArrDDArrInt match_patterns_2;
+	DDArrInt dd_arr_int;
+	DDString *tmp_str;
+	int i, j, n, m;
+
+	DD_INIT_ARRAY(&dd_arr_int);
+	DD_INIT_ARRAY(&match_patterns);
+	DD_INIT_ARRAY(&match_patterns_2);
+
+	for (i = 0; i < tendril->legend.keys.size; i++) {
+		DD_ADD_ARRAY(&match_patterns, dd_arr_int);
+	}
+
+	DD_INIT_ARRAY(&dd_arr_int);
+
+	consume(parser, scanner, TOKEN_LEFT_BRACE, "Expecting left brace");
+
+	while (parser->current.type != TOKEN_RIGHT_BRACE) {
+		consume(parser, scanner, TOKEN_IDENTIFIER, "Expecting key");
+		tmp_str = copy_string(parser->previous.start,
+				parser->previous.length);
+		n = key_index_tendril(tendril, tmp_str);
+		if (n == -1) {
+			error_at(&(parser->previous), "key not found for tendril");
+		}
+		free_string(tmp_str);
+
+		consume(parser, scanner, TOKEN_COLON, "Expecting colon.");
+
+		consume(parser, scanner, TOKEN_IDENTIFIER, "Expecting value.");
+		tmp_str = copy_string(parser->previous.start,
+				parser->previous.length);
+		m = value_index_tendril(tendril, tmp_str, n);
+		free_string(tmp_str);
+		if (m == -1) {
+			error_at(&(parser->previous), "value not found for tendril");
+		}
+		DD_ADD_ARRAY(&(match_patterns.elems[n]), m);
+
+		while (parser->current.type != TOKEN_SEMICOLON) {
+			consume(parser, scanner, TOKEN_PIPE, "Expecting pipe.");
+			consume(parser, scanner, TOKEN_IDENTIFIER, "Expecting value.");
+			tmp_str = copy_string(parser->previous.start,
+					parser->previous.length);
+			m = value_index_tendril(tendril, tmp_str, n);
+			free_string(tmp_str);
+			if (m == -1) {
+				error_at(&(parser->previous), "value not found for tendril");
+			}
+			DD_ADD_ARRAY(&(match_patterns.elems[n]), m);
+		}
+		consume(parser, scanner, TOKEN_SEMICOLON, "Expecting semicolon");
+	}
+
+	consume(parser, scanner, TOKEN_RIGHT_BRACE, "Expecting right brace");
+
+	for (i = 0; i < match_patterns.size; i++) {
+		if (match_patterns.elems[i].size == 0) {
+			for (j = 0; j < tendril->legend.values.elems[i].size; j++) {
+				DD_ADD_ARRAY(&(match_patterns.elems[i]), j);
+			}
+		}
+	}
+
+	if (match_patterns.size == 1) {
+		DD_ADD_ARRAY(&match_patterns_2, match_patterns.elems[0]);
+	} else {
+		for (i = 0; i < match_patterns.elems[0].size; i++) {
+			DD_INIT_ARRAY(&dd_arr_int);
+			DD_ADD_ARRAY(&dd_arr_int, match_patterns.elems[0].elems[i]);
+			DD_ADD_ARRAY(&match_patterns_2, dd_arr_int);
+		}
+		for (i = 1; i < match_patterns.size; i++) {
+			cart_concat(&match_patterns_2, &(match_patterns.elems[i]));
+		}
+	}
+
+	DD_INIT_ARRAY(&dd_arr_int);
+	for (i = 0; i < match_patterns_2.size; i++) {
+		n = int_from_values(&(match_patterns_2.elems[i]), &(tendril->legend));
+		DD_ADD_ARRAY(&dd_arr_int, n);
+	}
+
+	content->match = dd_arr_int;
+}
+
+static void parse_string(TEParser *parser, TEScanner *scanner,
+		TEContent *content, int idx) {
+	TEContentStr content_str;
+	DDString *tmp_str;
+
+	advance(parser, scanner);
+
+	tmp_str = copy_string(parser->previous.start,
+			parser->previous.length);
+
+	content_str.index = idx;
+	content_str.contents = *tmp_str;
+
+	DD_ADD_ARRAY(&(content->stat), content_str);
+
+	consume(parser, scanner, TOKEN_SEMICOLON, "Expecting semicolon.");
+}
+
+static void parse_switch(TEParser *parser, TEScanner *scanner,
+		TETendril *tendril, TEContent *content, int idx) {
+	TEInterpolation te_interpolation;
+	TEInterpolationElem te_interpolation_elem;
+	int n, m;
+	DDString *key;
+	DDString *val;
+
+	DD_INIT_ARRAY(&(te_interpolation.contents));
+	te_interpolation.index = idx;
+
+	advance(parser, scanner);
+	consume(parser, scanner, TOKEN_IDENTIFIER, "Expecting key identifier");
+	key = copy_string(parser->previous.start,
+			parser->previous.length);
+	n = key_index_tendril(tendril, key);
+	if (n == -1) {
+		error_at(&(parser->previous), "key not found for tendril");
+	}
+	te_interpolation.key = n;
+
+	consume(parser, scanner, TOKEN_LEFT_BRACE, "Expecting left brace");
+
+	while (parser->current.type != TOKEN_RIGHT_BRACE) {
+		consume(parser, scanner, TOKEN_IDENTIFIER, "Expecting value");
+		val = copy_string(parser->previous.start,
+				parser->previous.length);
+		m = value_index_tendril(tendril, val, n);
+		if (n == -1) {
+			error_at(&(parser->previous), "value not found for tendril");
+		}
+		te_interpolation_elem.value = m;
+
+		consume(parser, scanner, TOKEN_COLON, "Expecting colon");
+		consume(parser, scanner, TOKEN_STRING, "Expecting string");
+
+		te_interpolation_elem.contents = *(copy_string(
+					parser->previous.start, parser->previous.length));
+
+		DD_ADD_ARRAY(&(te_interpolation.contents), te_interpolation_elem);
+
+		consume(parser, scanner, TOKEN_SEMICOLON, "Expecting semicolon");
+	}
+	// check exhaustiveness
+
+	consume(parser, scanner, TOKEN_RIGHT_BRACE, "Expecting right brace.");
+	DD_ADD_ARRAY(&(content->dyn), te_interpolation);
+}
+
+static void parse_content(TEParser *parser, TEScanner  *scanner,
+		TETendril *tendril, TEContent *content) {
+	int idx = 0;
+
+	consume(parser, scanner, TOKEN_LEFT_BRACE, "Expecting left brace.");
+
+	while (parser->current.type != TOKEN_RIGHT_BRACE) {
+		if (parser->current.type == TOKEN_STRING) {
+			parse_string(parser, scanner, content, idx);
+		} else if (parser->current.type == TOKEN_SWITCH) {
+			parse_switch(parser, scanner, tendril, content, idx);
+		} else {
+			error_at(&(parser->current), "Expecting string or switch");
+		}
+		idx++;
+	}
+
+	consume(parser, scanner, TOKEN_RIGHT_BRACE, "Expecting right brace");
+}
+
+static void parse_content_on(TEParser *parser, TEScanner *scanner,
+		DDArrTETendril *tendrils) {
+	TETendril *tendril;
+	TEContent *content;
+
+	content = DD_ALLOCATE(TEContent, 1);
+	init_tendril_content(content);
+	tendril = parse_tendril_name(parser, scanner, tendrils);
+
+    consume(parser, scanner, TOKEN_LEFT_BRACE, "Expecting left brace");
+
+	if (parser->current.type == TOKEN_MATCH) {
+		advance(parser, scanner);
+		parse_match(parser, scanner, tendril, content);
+		consume(parser, scanner, TOKEN_CONTENT, "Expecting content");
+		parse_content(parser, scanner, tendril, content);
+	} else if (parser->current.type == TOKEN_CONTENT) {
+		advance(parser, scanner);
+		parse_content(parser, scanner, tendril, content);
+		consume(parser, scanner, TOKEN_CONTENT, "Expecting match");
+		parse_match(parser, scanner, tendril, content);
+	} else {
+		error_at(&(parser->current), "Expecting match or content");
+	}
+
+    consume(parser, scanner, TOKEN_RIGHT_BRACE, "Expecting right brace");
+
+	DD_ADD_ARRAY(&(tendril->contents), *content);
+}
+
 void parse_tendrils(TEScanner *scanner, DDArrTETendril *tendrils) {
     TEParser parser;
 
@@ -500,6 +739,11 @@ void parse_tendrils(TEScanner *scanner, DDArrTETendril *tendrils) {
 				parse_start_on(&parser, scanner, tendrils);
 				break;
 			}
+			case TOKEN_CONTENT_ON: {
+				advance(&parser, scanner);
+				parse_content_on(&parser, scanner, tendrils);
+				break;
+		   	}
             default:
                 error_at(&(parser.current), "Uhnexpected token.");
         }

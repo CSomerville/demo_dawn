@@ -6,10 +6,12 @@ void initialize_graph(DDGraph *g, bool directed, int count) {
 	int i;
 
 	g->edges = *(DDArrDDArrInt *)reallocate(NULL, 0, sizeof(DDArrDDArrInt));
+	g->edges.elems = NULL;
 	DD_INIT_ARRAY_SIZE(&(g->edges), count);
 	for (i = 0; i < count; i++) DD_INIT_ARRAY(&(g->edges.elems[i]));
 
 	g->degree = *(DDArrInt *)reallocate(NULL, 0, sizeof(DDArrInt));
+	g->degree.elems = NULL;
 	DD_INIT_ARRAY_SIZE(&(g->degree), count);
 	for (i = 0; i < count; i++) g->degree.elems[i] = 0;
 
@@ -18,14 +20,13 @@ void initialize_graph(DDGraph *g, bool directed, int count) {
 	g->directed = directed;
 }
 
-void free_graph(DDGraph *g) {
+void free_graph_members(DDGraph *g) {
 	int i;
 	for (i = 0; i < g->nvertices; i++) 
 		DD_FREE_ARRAY(&(g->edges.elems[i]));
 	DD_FREE_ARRAY(&(g->edges));
 	DD_FREE_ARRAY(&(g->degree));
-
-	free(g);
+	DD_INIT_ARRAY(&(g->degree));
 }
 
 void insert_edge(DDGraph *g, int x, int y, bool directed) {
@@ -46,6 +47,7 @@ bool edge_in_graph(DDGraph *g, int x, int y) {
 	}
 	return false;
 }
+
 
 void print_graph(DDGraph *g) {
 	int i, j;

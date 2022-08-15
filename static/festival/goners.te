@@ -1,0 +1,147 @@
+// each's anointment of other as goner under
+
+StateSpace Goners {
+	direction: Unset | Out | In;
+	location: Edge | TreeCover | Car | Plain | DeepPlain | Exit;
+}
+
+StartOn Goners {
+	direction: Unset;
+	location: Edge;
+}
+
+TransitionOn Goners {
+	current {
+		direction: Unset;
+	}
+	next {
+		direction: Out;
+	}
+}
+
+TransitionOn Goners {
+	current {
+		direction: Unset;
+	}
+	next {
+		direction: In;
+	}
+}
+
+TransitionOn Goners {
+	current {
+		direction: Out;
+	}
+	next {
+		direction: In;
+	}
+}
+
+TransitionOn Goners {
+	current {
+		direction: In;
+	}
+	next {
+		direction: Out;
+	}
+}
+
+TransitionOn Goners {
+	current {
+		direction: In;
+		location: Edge;
+	}
+	next {
+		location: TreeCover;
+	}
+}
+
+TransitionOn Goners {
+	current {
+		direction: Out;
+		location: Edge;
+	}
+	next {
+		location: Plain;
+	}
+}
+
+TransitionOn Goners {
+	current {
+		direction: In;
+		location: TreeCover;
+	}
+	next {
+		location: Car;
+	}
+}
+
+TransitionOn Goners {
+	current {
+		direction: Out;
+		location: TreeCover;
+	}
+	next {
+		location: Edge;
+	}
+}
+
+TransitionOn Goners {
+	current {
+		direction: In;
+		location: Car;
+	}
+	next {
+		location: Exit;
+	}
+}
+
+TransitionOn Goners {
+	current {
+		direction: Out;
+		location: Car;
+	}
+	next {
+		location: TreeCover;
+	}
+}
+
+TransitionOn Goners {
+	current {
+		direction: In;
+		location: Plain;
+	}
+	next {
+		location: Edge;
+	}
+}
+
+TransitionOn Goners {
+	current {
+		direction: Out;
+		location: Plain;
+	}
+	next {
+		location: DeepPlain;
+	}
+}
+
+TransitionOn Goners {
+	current {
+		direction: In;
+		location: DeepPlain;
+	}
+	next {
+		location: Plain;
+	}
+}
+
+TransitionOn Goners {
+	current {
+		direction: Out;
+		location: DeepPlain;
+	}
+	next {
+		location: Exit;
+	}
+}

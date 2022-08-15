@@ -26,10 +26,10 @@ static char peek(TEScanner* scanner) {
     return *(scanner->current);
 }
 
-/*static char peek_next(Scanner* scanner) {*/
-    /*if (is_at_end(scanner)) return '\0';*/
-    /*return scanner->current[1];*/
-/*}*/
+static char peek_next(TEScanner* scanner) {
+	if (is_at_end(scanner)) return '\0';
+	return scanner->current[1];
+}
 
 static bool is_alpha(char c) {
     return (c >= 'a' && c <= 'z') ||
@@ -54,6 +54,14 @@ static void skip_whitespace(TEScanner* scanner) {
                 scanner->line++;
                 advance(scanner);
                 break;
+			case '/':
+				if (peek_next(scanner) == '/') {
+					while (peek(scanner) != '\n' && !is_at_end(scanner))
+						advance(scanner);
+				} else {
+					return;
+				}
+				break;
             default:
                 return;
         }
@@ -89,6 +97,8 @@ static TETokenType check_keyword(TEScanner* scanner, int start, int length,
 
 static TETokenType identifier_type(TEScanner* scanner) {
     switch (scanner->start[0]) {
+		case 'C': return check_keyword(scanner, 1, 8, "ontentOn",
+						  TOKEN_CONTENT_ON);
         case 'S': 
 			if (scanner->current - scanner->start > 3 &&
 					scanner->start[1] == 't' &&
@@ -103,10 +113,24 @@ static TETokenType identifier_type(TEScanner* scanner) {
 			break;
         case 'T': return check_keyword(scanner, 1, 11, "ransitionOn",
 						  TOKEN_TRANSITION_ON);
-		case 'c': return check_keyword(scanner, 1, 6, "urrent",
-						  TOKEN_CURRENT);
+		case 'c':
+			if (scanner->current - scanner->start > 1) {
+				switch (scanner->start[1]) {
+					case 'o':
+						return check_keyword(scanner, 2, 5, "ntent",
+								TOKEN_CONTENT);
+					case 'u':
+					  	return check_keyword(scanner, 2, 5, "rrent",
+							  TOKEN_CURRENT);
+				}
+			}
+			break;
+		case 'm': return check_keyword(scanner, 1, 4, "atch",
+						  TOKEN_MATCH);
 		case 'n': return check_keyword(scanner, 1, 3, "ext",
 						  TOKEN_NEXT);
+		case 's': return check_keyword(scanner, 1, 5, "witch",
+						  TOKEN_SWITCH);
     }
     return TOKEN_IDENTIFIER;
 }
@@ -114,6 +138,18 @@ static TETokenType identifier_type(TEScanner* scanner) {
 static TEToken identifier(TEScanner* scanner) {
     while (is_alpha(peek(scanner)) || is_digit(peek(scanner))) advance(scanner);
     return make_token(scanner, identifier_type(scanner));
+}
+
+static TEToken string(TEScanner *scanner) {
+	while (peek(scanner) != '"' && !is_at_end(scanner)) {
+		if (peek(scanner) == '\n') scanner->line++;
+		advance(scanner);
+	}
+
+	if (is_at_end(scanner)) return error_token(scanner, "Unterminated string.");
+
+	advance(scanner);
+	return make_token(scanner, TOKEN_STRING);
 }
 
 TEToken scan_te_token(TEScanner* scanner) {
@@ -131,6 +167,7 @@ TEToken scan_te_token(TEScanner* scanner) {
         case ';': return make_token(scanner, TOKEN_SEMICOLON);
         case ':': return make_token(scanner, TOKEN_COLON);
         case '|': return make_token(scanner, TOKEN_PIPE);
+		case '"': return string(scanner);
     }
 
     return error_token(scanner, "Unexpected token.");
