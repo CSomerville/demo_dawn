@@ -69,6 +69,9 @@ void te_tendril_legend(void) {
 	assert(x == 0);
 	free_string(dd_str);
 
+	free_string(name);
+	free_te_tendrils(&tendrils);
+	DD_FREE_ARRAY(&tendrils);
 	printf("success\n");
 }
 
@@ -110,6 +113,9 @@ void te_tendril_start(void) {
 	tendril = *(lookup_tendril_by_name(&tendrils, name));
 	free_string(name);
 	assert(tendril.start == 1);
+
+	free_te_tendrils(&tendrils);
+	DD_FREE_ARRAY(&tendrils);
 	printf("success\n");
 }
 
@@ -168,13 +174,15 @@ void te_tendril_transition(void) {
 	DD_FREE_ARRAY(&values);
 	assert(edge_in_graph(tendril.graph, x, y));
 
+	free_te_tendrils(&tendrils);
+	DD_FREE_ARRAY(&tendrils);
 	printf("success\n");
 }
 
 void te_tendril_content(void) {
 	printf("testing te_tendril_content... ");
+	int i, j;
 	TEScanner scanner;
-	TETendril tendril;
 	DDArrTETendril tendrils;
 	const char *source =
 		"StateSpace Test {\n"
@@ -200,6 +208,18 @@ void te_tendril_content(void) {
 	DD_INIT_ARRAY(&tendrils);
 
 	parse_tendrils(&scanner, &tendrils);
+
+	/* test here you fool */
+	for (i = 0; i < tendrils.elems[0].contents.size; i++) {
+		for (j = 0; j < tendrils.elems[0].contents.elems[i].match.size; j++) {
+			printf("%d ", tendrils.elems[0].contents.elems[i].match.elems[j]);
+		}
+		printf("\n");
+	}
+
+	free_te_tendrils(&tendrils);
+	DD_FREE_ARRAY(&tendrils);
+
 	printf("success\n");
 }
 

@@ -104,13 +104,17 @@ typedef struct {
 
 void* reallocate(void* ptr, size_t old_size, size_t new_size);
 DDString* copy_string(const char* chars, int length);
+void give_to_dd_string(DDString *dd_str, const char* chars, int length);
 DDString* dd_string_concat(DDString *a, DDString *b);
 void free_string(DDString* dd_string);
+void free_dd_chars(DDString *dd_str);
 
 DD_DEF_ARRAY(DDString, DDString)
 DD_DEF_ARRAY(DDArrDDString, DDArrDDString)
 DD_DEF_ARRAY(int, Int)
 DD_DEF_ARRAY(DDArrInt, DDArrInt)
 DD_DEF_QUEUE(int, Int)
+
+void free_dd_arr_dd_str(DDArrDDString *dd_arr_dd_str);
 
 #endif

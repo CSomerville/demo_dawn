@@ -23,6 +23,17 @@ DDString* copy_string(const char* chars, int length) {
     return dd_str;
 }
 
+void give_to_dd_string(DDString *dd_str, const char* chars, int length) {
+	if (dd_str->chars != NULL) {
+		reallocate(dd_str->chars, sizeof(char) * (dd_str->length + 1), 0);
+	}
+    char* allocated = DD_ALLOCATE(char, length + 1);
+    memcpy(allocated, chars, length);
+    allocated[length] = '\0';
+    dd_str->length = length;
+    dd_str->chars = allocated;
+}
+
 DDString* dd_string_concat(DDString *a, DDString *b) {
 	int i;
 	DDString *result = DD_ALLOCATE(DDString, sizeof(DDString));
@@ -39,7 +50,19 @@ DDString* dd_string_concat(DDString *a, DDString *b) {
 	return result;
 }
 
+void free_dd_chars(DDString *dd_str) {
+    reallocate(dd_str->chars, sizeof(char) * (dd_str->length + 1), 0);
+}
+
+void free_dd_arr_dd_str(DDArrDDString *dd_arr_dd_str) {
+	int i;
+	for (i = 0; i < dd_arr_dd_str->size; i++) {
+		free_dd_chars(&(dd_arr_dd_str->elems[i]));
+	}
+	DD_FREE_ARRAY(dd_arr_dd_str);
+}
+
 void free_string(DDString* str) {
-    reallocate(str->chars, sizeof(char) * (str->length + 1), 0);
+	free_dd_chars(str);
     DD_FREE(DDString, str);
 }

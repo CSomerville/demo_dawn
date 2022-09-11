@@ -63,5 +63,9 @@ void print_tendril_legend(TETendrilLegend *leg);
 TETendril* lookup_tendril_by_name(DDArrTETendril *tendrils, DDString *name);
 int key_index_tendril(TETendril *tendril, DDString *key);
 int value_index_tendril(TETendril *tendril, DDString *value, int key_idx);
+void free_te_tendril(TETendril *tendril);
+void free_te_tendrils(DDArrTETendril *tendrils);
+//int get_te_tendril_content(DDArrDDString *result, state int,
+		//TETendril *tendril);
 
 #endif

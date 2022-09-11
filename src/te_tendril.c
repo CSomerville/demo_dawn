@@ -3,12 +3,54 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "dd_algo.h"
 #include "te_scanner.h"
 #include "te_tendril.h"
 
 static void init_te_tendril_legend(TETendrilLegend *leg) {
     DD_INIT_ARRAY(&(leg->keys));
     DD_INIT_ARRAY(&(leg->values));
+}
+
+static void free_te_tendril_legend(TETendrilLegend *leg) {
+	int i, j;
+	for (i = 0; i < leg->keys.size; i++) {
+		free_dd_chars(&(leg->keys.elems[i]));
+	}
+	DD_FREE_ARRAY(&(leg->keys));
+	for (i = 0; i < leg->values.size; i++) {
+		for (j = 0; j < leg->values.elems[i].size; j++) {
+			free_dd_chars(&(
+						leg->values.elems[i].elems[j]));
+		}
+		DD_FREE_ARRAY(&(leg->values.elems[i]));
+	}
+	DD_FREE_ARRAY(&(leg->values));
+}
+
+static void free_te_tendril_content(TEContent *con) {
+	int i, j;
+
+	DD_FREE_ARRAY(&con->match);
+	for (i = 0; i < con->stat.size; i++) {
+		free_dd_chars(&con->stat.elems[i].contents);
+	}
+	DD_FREE_ARRAY(&con->stat);
+	for (i = 0; i < con->dyn.size; i++) {
+		for (j = 0; j < con->dyn.elems[i].contents.size; j++) {
+			free_dd_chars(&con->dyn.elems[i].contents.elems[j].contents);
+		}
+		DD_FREE_ARRAY(&con->dyn.elems[i].contents);
+	}
+	DD_FREE_ARRAY(&con->dyn);
+}
+
+static void free_te_tendril_contents(DDArrTEContent *cons) {
+	int i;
+	for (i = 0; i < cons->size; i++) {
+		free_te_tendril_content(&cons->elems[i]);
+	}
+	DD_FREE_ARRAY(cons);
 }
 
 void print_tendril_legend(TETendrilLegend *leg) {
@@ -36,10 +78,25 @@ static void init_te_tendril(TETendril *tendril) {
 	DD_INIT_ARRAY(&contents);
 
     tendril->legend = leg;
-    tendril->name = *copy_string("", 0);
+	tendril->name.chars = NULL;
+	give_to_dd_string(&(tendril->name), "", 0);
 	tendril->graph = NULL;
 	tendril->start = -1;
 	tendril->contents = contents;
+}
+
+void free_te_tendril(TETendril *tendril) {
+	free_dd_chars(&(tendril->name));
+	free_te_tendril_legend(&(tendril->legend));
+	free_graph_members(tendril->graph);
+	free_te_tendril_contents(&tendril->contents);
+	free(tendril->graph);
+}
+
+void free_te_tendrils(DDArrTETendril *tendrils) {
+	int i;
+	for (i = 0; i < tendrils->size; i++)
+		free_te_tendril(&(tendrils->elems[i]));
 }
 
 static void init_tendril_graph(TETendril *tendril) {
@@ -125,45 +182,17 @@ int te_transition(TETendril *tendril, int current) {
 	return next.elems[r];
 }
 
-static void cart_concat(DDArrDDArrInt *acc, DDArrInt *next) {
-	int i, j, k;
-	DDArrInt tmp;
-	DDArrDDArrInt copy;
-	
-	DD_INIT_ARRAY(&copy);
-	for (i = 0; i < acc->size; i++) {
-		DD_INIT_ARRAY(&tmp);
-		for (j = 0; j < acc->elems[i].size; j++) {
-			DD_ADD_ARRAY(&tmp, acc->elems[i].elems[j]);
-		}
-		DD_ADD_ARRAY(&copy, tmp);
-	}
-
-	DD_INIT_ARRAY(acc);
-	for (i = 0; i < copy.size; i++) {
-		for (j = 0; j < next->size; j++) {
-			DD_INIT_ARRAY(&tmp);
-			for (k = 0; k < copy.elems[i].size; k++) {
-				DD_ADD_ARRAY(&tmp, copy.elems[i].elems[k]);
-			}
-			DD_ADD_ARRAY(&tmp, next->elems[j]);
-			DD_ADD_ARRAY(acc, tmp);
-		}
-	}
-}
-
 static void add_transitions(TETendril *tendril, DDArrDDArrDDString *current, 
 		DDArrDDArrDDString *next) {
 	DDArrInt tmp;
 	DDArrDDArrInt cur;
-	DDArrDDArrInt final_cur;
+	DDArrDDArrInt *final_cur;
 	DDArrInt ne;
 	int i, j, n, x, y;
 	bool found;
 
 	DD_INIT_ARRAY(&tmp);
 	DD_INIT_ARRAY(&cur);
-	DD_INIT_ARRAY(&final_cur);
 	DD_INIT_ARRAY(&ne);
 
 	for (i = 0; i < tendril->legend.keys.size; i++) {
@@ -206,25 +235,14 @@ static void add_transitions(TETendril *tendril, DDArrDDArrDDString *current,
 		}
 	}
 
-	if (cur.size == 1) {
-		DD_ADD_ARRAY(&final_cur, cur.elems[0]);
-	} else {
-		for (i = 0; i < cur.elems[0].size; i++) {
-			DD_INIT_ARRAY(&tmp);
-			DD_ADD_ARRAY(&tmp, cur.elems[0].elems[i]);
-			DD_ADD_ARRAY(&final_cur, tmp);
-		}
-		for (i = 1; i < cur.size; i++) {
-			cart_concat(&final_cur, &(cur.elems[i]));
-		}
-	}
+	final_cur = cartesian_product(&cur);
 
-	for (i = 0; i < final_cur.size; i++) {
+	for (i = 0; i < final_cur->size; i++) {
 		DD_INIT_ARRAY(&tmp);
-		x = int_from_values(&(final_cur.elems[i]), &(tendril->legend));
-		for (j = 0; j < final_cur.elems[i].size; j++) {
+		x = int_from_values(&(final_cur->elems[i]), &(tendril->legend));
+		for (j = 0; j < final_cur->elems[i].size; j++) {
 			if (ne.elems[j] == -1) {
-				DD_ADD_ARRAY(&tmp, final_cur.elems[i].elems[j]);
+				DD_ADD_ARRAY(&tmp, final_cur->elems[i].elems[j]);
 			} else {
 				DD_ADD_ARRAY(&tmp, ne.elems[j]);
 			}
@@ -234,7 +252,18 @@ static void add_transitions(TETendril *tendril, DDArrDDArrDDString *current,
 		if (!(edge_in_graph(tendril->graph, x, y))) {
 			insert_edge(tendril->graph, x, y, tendril->graph->directed);
 		}
+		DD_FREE_ARRAY(&tmp);
 	}
+	for (i = 0; i < cur.size; i++) {
+		DD_FREE_ARRAY(&cur.elems[i]);
+	}
+	DD_FREE_ARRAY(&cur);
+	for (i = 0; i < final_cur->size; i++) {
+		DD_FREE_ARRAY(&final_cur->elems[i]);
+	}
+	DD_FREE_ARRAY(final_cur);
+	free(final_cur);
+	DD_FREE_ARRAY(&ne);
 }
 
 static void error_at(TEToken *token, const char *msg) {
@@ -278,27 +307,30 @@ static void parse_state_space(TEParser *parser, TEScanner *scanner,
     DDString tmp_str;
     DDArrDDString tmp_dd_arr_str;
 
+	tmp_str.chars = NULL;
     DD_INIT_ARRAY(&tmp_dd_arr_str);
     init_te_tendril(&tendril);
     consume(parser, scanner, TOKEN_IDENTIFIER,
 			"Expecting state space name");
-    tendril.name = *copy_string(parser->previous.start,
+	give_to_dd_string(&tendril.name, parser->previous.start,
 			parser->previous.length);
 
     consume(parser, scanner, TOKEN_LEFT_BRACE, "Expecting left brace");
 
     while (parser->current.type != TOKEN_RIGHT_BRACE) {
         consume(parser, scanner, TOKEN_IDENTIFIER, "Expecting key name");
-        tmp_str = *copy_string(parser->previous.start,
+		give_to_dd_string(&tmp_str, parser->previous.start,
 				parser->previous.length);
         DD_ADD_ARRAY(&(tendril.legend.keys), tmp_str);
+		tmp_str.chars = NULL;
 
         consume(parser, scanner, TOKEN_COLON, "Expecting colon");
         
         consume(parser, scanner, TOKEN_IDENTIFIER, "Expecting value name");
-        tmp_str = *copy_string(parser->previous.start,
+		give_to_dd_string(&tmp_str, parser->previous.start,
 				parser->previous.length);
         DD_ADD_ARRAY(&tmp_dd_arr_str, tmp_str);
+		tmp_str.chars = NULL;
 
         while (1) {
             if (parser->current.type == TOKEN_SEMICOLON) {
@@ -308,9 +340,10 @@ static void parse_state_space(TEParser *parser, TEScanner *scanner,
                 consume(parser, scanner, TOKEN_PIPE, "Expecting pipe");
                 consume(parser, scanner, TOKEN_IDENTIFIER,
 						"Expecting value name");
-                tmp_str = *copy_string(parser->previous.start,
+				give_to_dd_string(&tmp_str, parser->previous.start,
 						parser->previous.length);
                 DD_ADD_ARRAY(&tmp_dd_arr_str, tmp_str);
+				tmp_str.chars = NULL;
             }
         }
 
@@ -327,8 +360,9 @@ static void parse_state_space(TEParser *parser, TEScanner *scanner,
 static void parse_next(TEParser *parser, TEScanner *scanner,
 		DDArrDDArrDDString *next) {
 	DDArrDDString tmp_line;
-	DDString *tmp_str;
+	DDString tmp_str;
 
+	tmp_str.chars = NULL;
 	DD_INIT_ARRAY(&tmp_line);
 
     consume(parser, scanner, TOKEN_LEFT_BRACE, "next expecting left brace");
@@ -336,20 +370,23 @@ static void parse_next(TEParser *parser, TEScanner *scanner,
 	while (parser->current.type != TOKEN_RIGHT_BRACE) {
 		consume(parser, scanner, TOKEN_IDENTIFIER,
 				"next expecting key name");
-		tmp_str = copy_string(parser->previous.start,
+		give_to_dd_string(&tmp_str, parser->previous.start,
 				parser->previous.length);
 		// check for key membership
-		DD_ADD_ARRAY(&tmp_line, *tmp_str);
+		DD_ADD_ARRAY(&tmp_line, tmp_str);
+		tmp_str.chars = NULL;
 
 		consume(parser, scanner, TOKEN_COLON,
 				"next expecting colon");
 
 		consume(parser, scanner, TOKEN_IDENTIFIER,
 				"next expecting value name");
-		tmp_str = copy_string(parser->previous.start,
+
+		give_to_dd_string(&tmp_str, parser->previous.start,
 				parser->previous.length);
 		// check for value membership
-		DD_ADD_ARRAY(&tmp_line, *tmp_str);
+		DD_ADD_ARRAY(&tmp_line, tmp_str);
+		tmp_str.chars = NULL;
 
 		consume(parser, scanner, TOKEN_SEMICOLON,
 				"next expecting semicolon");
@@ -365,8 +402,9 @@ static void parse_next(TEParser *parser, TEScanner *scanner,
 static void parse_current(TEParser *parser, TEScanner *scanner,
 		DDArrDDArrDDString *current) {
 	DDArrDDString tmp_line;
-	DDString *tmp_str;
+	DDString tmp_str;
 
+	tmp_str.chars = NULL;
 	DD_INIT_ARRAY(&tmp_line);
 
     consume(parser, scanner, TOKEN_LEFT_BRACE,
@@ -375,20 +413,22 @@ static void parse_current(TEParser *parser, TEScanner *scanner,
 	while (parser->current.type != TOKEN_RIGHT_BRACE) {
 		consume(parser, scanner, TOKEN_IDENTIFIER,
 				"current expecting key name");
-		tmp_str = copy_string(parser->previous.start,
+		give_to_dd_string(&tmp_str, parser->previous.start,
 				parser->previous.length);
 		// check for key membership
-		DD_ADD_ARRAY(&tmp_line, *tmp_str);
+		DD_ADD_ARRAY(&tmp_line, tmp_str);
+		tmp_str.chars = NULL;
 
 		consume(parser, scanner, TOKEN_COLON,
 				"current expecting colon");
 
 		consume(parser, scanner, TOKEN_IDENTIFIER,
 				"current expecting value name");
-		tmp_str = copy_string(parser->previous.start,
+		give_to_dd_string(&tmp_str, parser->previous.start,
 				parser->previous.length);
 		// check for value membership
-		DD_ADD_ARRAY(&tmp_line, *tmp_str);
+		DD_ADD_ARRAY(&tmp_line, tmp_str);
+		tmp_str.chars = NULL;
 
         while (1) {
             if (parser->current.type == TOKEN_SEMICOLON) {
@@ -398,10 +438,11 @@ static void parse_current(TEParser *parser, TEScanner *scanner,
                 consume(parser, scanner, TOKEN_PIPE, "Expecting pipe");
                 consume(parser, scanner, TOKEN_IDENTIFIER,
 						"Expecting value name");
-				tmp_str = copy_string(parser->previous.start,
+				give_to_dd_string(&tmp_str, parser->previous.start,
 						parser->previous.length);
 				// check for value membership
-				DD_ADD_ARRAY(&tmp_line, *tmp_str);
+				DD_ADD_ARRAY(&tmp_line, tmp_str);
+				tmp_str.chars = NULL;
 			}
 		}
 		DD_ADD_ARRAY(current, tmp_line);
@@ -434,6 +475,7 @@ static void parse_transition_on(TEParser *parser, TEScanner *scanner,
     TETendril *tendril;
 	DDArrDDArrDDString next;
 	DDArrDDArrDDString current;
+	int i;
 
 	DD_INIT_ARRAY(&next);
     DD_INIT_ARRAY(&current);
@@ -458,6 +500,15 @@ static void parse_transition_on(TEParser *parser, TEScanner *scanner,
 
 	add_transitions(tendril, &current, &next);
 
+	for (i = 0; i < next.size; i++) {
+		free_dd_arr_dd_str(&next.elems[i]);
+	}
+	DD_FREE_ARRAY(&next);
+	for (i = 0; i < current.size; i++) {
+		free_dd_arr_dd_str(&current.elems[i]);
+	}
+	DD_FREE_ARRAY(&current);
+
     consume(parser, scanner, TOKEN_RIGHT_BRACE, "Expecting right brace");
 }
 
@@ -470,7 +521,7 @@ void parse_start_on(TEParser *parser, TEScanner *scanner,
 
 	tendril = parse_tendril_name(parser, scanner, tendrils);
 
-	vals = *(DDArrInt *)reallocate(NULL, 0, sizeof(DDArrInt));
+	DD_INIT_ARRAY(&vals);
 	DD_INIT_ARRAY_SIZE(&vals, tendril->legend.keys.size);
 	for (i = 0; i < tendril->legend.keys.size; i++) vals.elems[i] = -1;
 
@@ -481,6 +532,7 @@ void parse_start_on(TEParser *parser, TEScanner *scanner,
 		tmp_str = copy_string(parser->previous.start,
 				parser->previous.length);
 		n = key_index_tendril(tendril, tmp_str);
+		free_string(tmp_str);
 		if (n == -1) {
 			error_at(&(parser->previous), "key not found for tendril");
 		}
@@ -490,6 +542,7 @@ void parse_start_on(TEParser *parser, TEScanner *scanner,
 		tmp_str = copy_string(parser->previous.start,
 				parser->previous.length);
 		m = value_index_tendril(tendril, tmp_str, n);
+		free_string(tmp_str);
 		if (m == -1) {
 			error_at(&(parser->previous), "value not found for tendril");
 		}
@@ -507,6 +560,7 @@ void parse_start_on(TEParser *parser, TEScanner *scanner,
 	}
 
 	tendril->start = int_from_values(&vals, &(tendril->legend));
+	DD_FREE_ARRAY(&vals);
     consume(parser, scanner, TOKEN_RIGHT_BRACE, "Expecting right brace");
 }
 
@@ -514,14 +568,13 @@ void parse_start_on(TEParser *parser, TEScanner *scanner,
 static void parse_match(TEParser *parser, TEScanner  *scanner,
 		TETendril *tendril, TEContent *content) {
 	DDArrDDArrInt match_patterns;
-	DDArrDDArrInt match_patterns_2;
+	DDArrDDArrInt *match_patterns_2;
 	DDArrInt dd_arr_int;
 	DDString *tmp_str;
 	int i, j, n, m;
 
 	DD_INIT_ARRAY(&dd_arr_int);
 	DD_INIT_ARRAY(&match_patterns);
-	DD_INIT_ARRAY(&match_patterns_2);
 
 	for (i = 0; i < tendril->legend.keys.size; i++) {
 		DD_ADD_ARRAY(&match_patterns, dd_arr_int);
@@ -578,40 +631,38 @@ static void parse_match(TEParser *parser, TEScanner  *scanner,
 		}
 	}
 
-	if (match_patterns.size == 1) {
-		DD_ADD_ARRAY(&match_patterns_2, match_patterns.elems[0]);
-	} else {
-		for (i = 0; i < match_patterns.elems[0].size; i++) {
-			DD_INIT_ARRAY(&dd_arr_int);
-			DD_ADD_ARRAY(&dd_arr_int, match_patterns.elems[0].elems[i]);
-			DD_ADD_ARRAY(&match_patterns_2, dd_arr_int);
-		}
-		for (i = 1; i < match_patterns.size; i++) {
-			cart_concat(&match_patterns_2, &(match_patterns.elems[i]));
-		}
-	}
+	match_patterns_2 = cartesian_product(&match_patterns);
 
 	DD_INIT_ARRAY(&dd_arr_int);
-	for (i = 0; i < match_patterns_2.size; i++) {
-		n = int_from_values(&(match_patterns_2.elems[i]), &(tendril->legend));
+	for (i = 0; i < match_patterns_2->size; i++) {
+		n = int_from_values(&(match_patterns_2->elems[i]), &(tendril->legend));
 		DD_ADD_ARRAY(&dd_arr_int, n);
 	}
 
 	content->match = dd_arr_int;
+
+	for (i = 0; i < match_patterns.size; i++) {
+		DD_FREE_ARRAY(&match_patterns.elems[i]);
+	}
+	DD_FREE_ARRAY(&match_patterns);
+
+	for (i = 0; i < match_patterns_2->size; i++) {
+		DD_FREE_ARRAY(&match_patterns_2->elems[i]);
+	}
+	DD_FREE_ARRAY(match_patterns_2);
+	free(match_patterns_2);
 }
 
 static void parse_string(TEParser *parser, TEScanner *scanner,
 		TEContent *content, int idx) {
 	TEContentStr content_str;
-	DDString *tmp_str;
 
 	advance(parser, scanner);
 
-	tmp_str = copy_string(parser->previous.start,
-			parser->previous.length);
-
 	content_str.index = idx;
-	content_str.contents = *tmp_str;
+	content_str.contents.chars = NULL;
+	give_to_dd_string(&content_str.contents, parser->previous.start,
+			parser->previous.length);
 
 	DD_ADD_ARRAY(&(content->stat), content_str);
 
@@ -634,6 +685,7 @@ static void parse_switch(TEParser *parser, TEScanner *scanner,
 	key = copy_string(parser->previous.start,
 			parser->previous.length);
 	n = key_index_tendril(tendril, key);
+	free_string(key);
 	if (n == -1) {
 		error_at(&(parser->previous), "key not found for tendril");
 	}
@@ -646,6 +698,7 @@ static void parse_switch(TEParser *parser, TEScanner *scanner,
 		val = copy_string(parser->previous.start,
 				parser->previous.length);
 		m = value_index_tendril(tendril, val, n);
+		free_string(val);
 		if (n == -1) {
 			error_at(&(parser->previous), "value not found for tendril");
 		}
@@ -654,8 +707,9 @@ static void parse_switch(TEParser *parser, TEScanner *scanner,
 		consume(parser, scanner, TOKEN_COLON, "Expecting colon");
 		consume(parser, scanner, TOKEN_STRING, "Expecting string");
 
-		te_interpolation_elem.contents = *(copy_string(
-					parser->previous.start, parser->previous.length));
+		te_interpolation_elem.contents.chars = NULL;
+		give_to_dd_string(&te_interpolation_elem.contents,
+			parser->previous.start, parser->previous.length);
 
 		DD_ADD_ARRAY(&(te_interpolation.contents), te_interpolation_elem);
 
@@ -715,6 +769,7 @@ static void parse_content_on(TEParser *parser, TEScanner *scanner,
     consume(parser, scanner, TOKEN_RIGHT_BRACE, "Expecting right brace");
 
 	DD_ADD_ARRAY(&(tendril->contents), *content);
+	free(content);
 }
 
 void parse_tendrils(TEScanner *scanner, DDArrTETendril *tendrils) {
@@ -749,3 +804,47 @@ void parse_tendrils(TEScanner *scanner, DDArrTETendril *tendrils) {
         }
     }
 }
+
+/*static void get_te_tendril_content_matches(DDArrInt *match_indices,*/
+		/*int state, TETendril) {*/
+	/*int i, j;*/
+	/*for (i = 0; i < tendril->contents.size; i++) {*/
+		/*for (j = 0; j < tendril->contents.elems[i].match.size; j++) {*/
+			/*if (tendril->contents.elems[i].match.elems[j] == state) {*/
+				/*DD_ADD_ARRAY(&match_indices, i);*/
+			/*}*/
+		/*}*/
+	/*}*/
+/*}*/
+
+/*static void collect_contents(DDArrDDString *collect,*/
+		/*DDArrInt *state_values, TEContent *content) {*/
+	/*int i, j;*/
+	/*i = j = 0;*/
+	/*while (i < content->stat.size && j < content->dyn.size) {*/
+		/*if (!content->dyn.size || */
+				/*(content->stat.size && */
+				 /*(content->stat.elems[i].index < */
+				  /*content->dyn.elems[j].index))) {*/
+			/*DD_ADD_ARRAY(collect, content->stat.elems[i].contents);*/
+		/*}*/
+
+	/*}*/
+/*}*/
+
+
+/*int get_te_tendril_content(DDArrString *result, int state,*/
+		/*TETendril *tendril) {*/
+	/*int i, j;*/
+	/*DDArrInt match_indices;*/
+
+	/*DD_INIT_ARRAY(&match_indices);*/
+	/*get_te_tendril_content_matches(&match_indices, state, tendril);*/
+
+	/*if (match_indices.size == 0)*/
+		/*return 0;*/
+
+
+
+	/*return 1;*/
+/*}*/

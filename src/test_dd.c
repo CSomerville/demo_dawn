@@ -4,6 +4,7 @@
 
 #include "dd_data.h"
 #include "dd_graph.h"
+#include "dd_algo.h"
 
 void dd_array(void) {
 	printf("testing dd_array... ");
@@ -99,6 +100,16 @@ void dd_string(void) {
 	free_string(str_b);
 	free_string(result);
 
+	/* give to dd_string */
+	DDString dd_str;
+	dd_str.chars = NULL;
+	const char *test_give = "Demo dawn through fronds";
+	int len_give = 24;
+	give_to_dd_string(&dd_str, test_give, len_give);
+	assert(dd_str.length == len_give);
+	assert(!strcmp(test_give, dd_str.chars));
+	free_dd_chars(&dd_str);
+
 	printf("success.\n");
 }
 
@@ -118,9 +129,45 @@ void dd_graph(void) {
 	printf("success.\n");
 }
 
+void dd_cart_concat(void) {
+	printf("testing dd_cart_concat... ");
+	int i, j;
+	DDArrInt tmp;
+	DDArrDDArrInt test;
+	DDArrDDArrInt *next;
+
+	DD_INIT_ARRAY(&test);
+
+	for (i = 1; i <= 3; i++) {
+		DD_INIT_ARRAY(&tmp);
+		for (j = 1; j <= 3; j++) {
+			DD_ADD_ARRAY(&tmp, i * j);
+		}	
+		DD_ADD_ARRAY(&test, tmp);
+	}
+
+	next = cartesian_product(&test);
+
+	assert(next->size == 27);
+
+	for (i = 0; i < next->size; i++) {
+		DD_FREE_ARRAY(&next->elems[i]);
+	}
+	DD_FREE_ARRAY(next);
+	free(next);
+
+	for (i = 0; i < test.size; i++) {
+		DD_FREE_ARRAY(&test.elems[i]);
+	}
+	DD_FREE_ARRAY(&test);
+
+	printf("success.\n");
+}
+
 int main(void) {
 	dd_array();
 	dd_queue();
 	dd_string();
 	dd_graph();
+	dd_cart_concat();
 }
