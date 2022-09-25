@@ -7,3 +7,6 @@ test-te :
 	gcc src/test_te.c src/te_*c src/dd_*c -g -Wall -Wextra -o bin/test_te
 	valgrind --leak-check=yes ./bin/test_te
 	rm ./bin/test_te
+
+fe-scratch :
+	gcc src/fe_scratch.c src/te_*c src/dd_*c -g -Wall -Wextra -o bin/fe_scratch

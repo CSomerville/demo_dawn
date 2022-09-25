@@ -15,12 +15,14 @@ typedef struct {
     DDArrDDArrDDString values;
 } TETendrilLegend;
 
+typedef enum {
+	TE_CONTENT_ELEM_TYPE_STR,
+	TE_CONTENT_ELEM_TYPE_INTER,
+} TEContentElemType;
+
 typedef struct {
-	int index;
 	DDString contents;
 } TEContentStr;
-
-DD_DEF_ARRAY(TEContentStr, TEContentStr);
 
 typedef struct {
 	int value;
@@ -30,17 +32,25 @@ typedef struct {
 DD_DEF_ARRAY(TEInterpolationElem, TEInterpolationElem);
 
 typedef struct {
-	int index;
 	int key;
 	DDArrTEInterpolationElem contents;
 } TEInterpolation;
 
-DD_DEF_ARRAY(TEInterpolation, TEInterpolation);
+typedef union {
+	TEContentStr s;
+	TEInterpolation i;
+} TEContentDatum;
+
+typedef struct {
+	TEContentElemType type;
+	TEContentDatum datum;
+} TEContentElem;
+
+DD_DEF_ARRAY(TEContentElem, TEContentElem);
 
 typedef struct {
 	DDArrInt match;
-	DDArrTEContentStr stat;
-	DDArrTEInterpolation dyn;
+	DDArrTEContentElem contents;
 } TEContent;
 
 DD_DEF_ARRAY(TEContent, TEContent);
@@ -65,7 +75,8 @@ int key_index_tendril(TETendril *tendril, DDString *key);
 int value_index_tendril(TETendril *tendril, DDString *value, int key_idx);
 void free_te_tendril(TETendril *tendril);
 void free_te_tendrils(DDArrTETendril *tendrils);
-//int get_te_tendril_content(DDArrDDString *result, state int,
-		//TETendril *tendril);
+int get_te_tendril_content(DDArrDDArrDDString *result, int state,
+		TETendril *tendril);
+void print_te_state(int state, TETendril *tendril);
 
 #endif

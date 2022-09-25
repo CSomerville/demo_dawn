@@ -179,11 +179,64 @@ void te_tendril_transition(void) {
 	printf("success\n");
 }
 
+void te_tendril_transition_case_2(void) {
+	printf("testing te_tendril_transition_case_2... ");
+	TEScanner scanner;
+	TETendril tendril;
+	DDArrTETendril tendrils;
+	DDArrInt values;
+	int x, y;
+	DDString *name = copy_string("Test", 4);
+	const char *source =
+		"StateSpace Test {\n"
+		"	shape: Oval | Square | Rectangle | Circle;\n"
+		"	color: Yellow | Fuschia | Lime;\n"
+		"	texture: Bumpy | Smooth;\n"
+		"}\n"
+		"TransitionOn Test {\n"
+		"	current {\n"
+		"		shape: Oval;\n"
+		"		color: Fuschia;\n"
+		"	}\n"
+		"	next {\n"
+		"		color: Lime;\n"
+		"	}\n"
+		"}\n";
+
+	init_te_scanner(&scanner, source);
+	DD_INIT_ARRAY(&tendrils);
+	DD_INIT_ARRAY(&values);
+
+	parse_tendrils(&scanner, &tendrils);
+	tendril = *(lookup_tendril_by_name(&tendrils, name));
+	free_string(name);
+
+	DD_ADD_ARRAY(&values, 0);
+	DD_ADD_ARRAY(&values, 1);
+	DD_ADD_ARRAY(&values, 0);
+	x = int_from_values(&values, &tendril.legend);
+	DD_FREE_ARRAY(&values);
+	DD_ADD_ARRAY(&values, 0);
+	DD_ADD_ARRAY(&values, 2);
+	DD_ADD_ARRAY(&values, 0);
+	y = int_from_values(&values, &tendril.legend);
+	DD_FREE_ARRAY(&values);
+	printf("x: %d, y: %d\n", x, y);
+	print_graph(tendril.graph);
+	assert(edge_in_graph(tendril.graph, x, y));
+
+	free_te_tendrils(&tendrils);
+	DD_FREE_ARRAY(&tendrils);
+	printf("success\n");
+}
+
 void te_tendril_content(void) {
 	printf("testing te_tendril_content... ");
 	int i, j;
 	TEScanner scanner;
 	DDArrTETendril tendrils;
+	DDArrDDArrDDString strs;
+	DD_INIT_ARRAY(&strs);
 	const char *source =
 		"StateSpace Test {\n"
 		"	shape: Oval | Square | Rectangle | Circle;\n"
@@ -209,16 +262,26 @@ void te_tendril_content(void) {
 
 	parse_tendrils(&scanner, &tendrils);
 
-	/* test here you fool */
-	for (i = 0; i < tendrils.elems[0].contents.size; i++) {
-		for (j = 0; j < tendrils.elems[0].contents.elems[i].match.size; j++) {
-			printf("%d ", tendrils.elems[0].contents.elems[i].match.elems[j]);
-		}
-		printf("\n");
+	for (i = 0; i < tendrils.elems[0].contents.elems[0].match.size; i++) {
+		j = tendrils.elems[0].contents.elems[0].match.elems[i];
+		assert(j % 4 == 0 || j % 4 == 1);
 	}
+
+	get_te_tendril_content(&strs, 16, &tendrils.elems[0]);
+	assert(!strcmp(strs.elems[0].elems[0].chars, "blarg for uuuuu"));
+	assert(!strcmp(strs.elems[0].elems[1].chars, "in fuschia"));
+	assert(!strcmp(strs.elems[0].elems[2].chars, "pls"));
 
 	free_te_tendrils(&tendrils);
 	DD_FREE_ARRAY(&tendrils);
+
+	for (i = 0; i < strs.size; i++) {
+		for (j = 0; j < strs.elems[i].size; j++) {
+			free_dd_chars(&strs.elems[i].elems[j]);
+		}
+		DD_FREE_ARRAY(&strs.elems[i]);
+	}
+	DD_FREE_ARRAY(&strs);
 
 	printf("success\n");
 }
@@ -227,5 +290,6 @@ int main(void) {
 	te_tendril_legend();
 	te_tendril_start();
 	te_tendril_transition();
+	te_tendril_transition_case_2();
 	te_tendril_content();
 }

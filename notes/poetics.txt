@@ -1,0 +1,34 @@
+Is it so that poetry's area of effect has shrunk drastically? Duh that the mathematization
+of scientific knowledge wrested the efficacy of cosmic pronouncements from the poem. Duh
+that the emergence of propaganda undercut the desirability or even comprehension of the poet
+in the minds of Earthly powers. Duh that the commercialization of religion descoped another
+source of poetry's claim to cosmic veracity. Duh that the marketization of mass entertainment
+cast poetry into the role of only the weakest product category in the tireless struggle
+for social attention. Duh, perhaps, that social media made a mockery of poetry's claim as
+a unique vehicle for the realization of new, cliche shattering language.
+
+Duh most of all that memory, supported once by the prosodic mneumonics of poetry's art, has
+atrophied and collapsed given the opportunity to consult searchable electronic records.
+
+Does anything remain?
+
+***
+
+Reading (in Speech and Language Processing) about entropy in the
+information theoretic sense of the word, and I thought this was
+an interesting way of thinking about obscurity in poetry. A signal can
+be transmitted error free if the entropy of the signal (the irreducible
+complexity below which the signal can not be compressed) is less than
+the channel capacity. Well semanticity is not (I think) reducible to
+information so this relationship I am drawing is more metaphoric than
+real but I find it provocative and useful to think of obscurity in
+poetry as squeezing the channel capacity so that the signal becomes
+prey to the channel's noise. Or maybe even more usefully as ramping up
+the entropy of the signal to exceed the channel's capacity.
+
+***
+
+The deep relationship between blindness and poetry, even for instance
+in the simulated blindness of the young bards at the Gaelic poetry
+school who worked in darkness, against the Baudelairean visionary
+apprehension of the (imperial-consumerist) real. Look up Benjamin.

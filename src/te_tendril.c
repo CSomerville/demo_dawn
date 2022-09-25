@@ -32,17 +32,20 @@ static void free_te_tendril_content(TEContent *con) {
 	int i, j;
 
 	DD_FREE_ARRAY(&con->match);
-	for (i = 0; i < con->stat.size; i++) {
-		free_dd_chars(&con->stat.elems[i].contents);
-	}
-	DD_FREE_ARRAY(&con->stat);
-	for (i = 0; i < con->dyn.size; i++) {
-		for (j = 0; j < con->dyn.elems[i].contents.size; j++) {
-			free_dd_chars(&con->dyn.elems[i].contents.elems[j].contents);
+
+	for (i = 0; i < con->contents.size; i++) {
+		if (con->contents.elems[i].type == TE_CONTENT_ELEM_TYPE_STR) {
+			free_dd_chars(&con->contents.elems[i].datum.s.contents);
+		} else {
+			for (j = 0; j < con->contents.elems[i].datum.i.contents.size; j++) {
+				free_dd_chars(
+					&con->contents.elems[i].datum.i.contents.elems[j].contents
+				);
+			}
+			DD_FREE_ARRAY(&con->contents.elems[i].datum.i.contents);
 		}
-		DD_FREE_ARRAY(&con->dyn.elems[i].contents);
 	}
-	DD_FREE_ARRAY(&con->dyn);
+	DD_FREE_ARRAY(&con->contents);
 }
 
 static void free_te_tendril_contents(DDArrTEContent *cons) {
@@ -64,10 +67,25 @@ void print_tendril_legend(TETendrilLegend *leg) {
 	}
 }
 
+void print_te_state(int state, TETendril *tendril) {
+	DDArrInt vals;
+	int i;
+	DD_INIT_ARRAY(&vals);
+	DD_INIT_ARRAY_SIZE(&vals, tendril->legend.keys.size);
+	values_from_int(state, &vals, &tendril->legend);
+	printf("plaintext for state: %d\n", state);
+	for (i = 0; i < tendril->legend.values.size; i++) {
+		printf("key: %s, value: %s\n",
+			tendril->legend.keys.elems[i].chars,
+			tendril->legend.values.elems[i].elems[vals.elems[i]].chars);
+	}
+	printf("*****\n");
+	DD_FREE_ARRAY(&vals);
+}
+
 static void init_tendril_content(TEContent *con) {
-	DD_INIT_ARRAY(&(con->match));
-	DD_INIT_ARRAY(&(con->stat));
-	DD_INIT_ARRAY(&(con->dyn));
+	DD_INIT_ARRAY(&con->match);
+	DD_INIT_ARRAY(&con->contents);
 }
 
 static void init_te_tendril(TETendril *tendril) {
@@ -179,6 +197,7 @@ int te_transition(TETendril *tendril, int current) {
 		exit(1);
 	}
 	r = rand() % next.size;
+	printf("next size: %d, r: %d\n", next.size, r);
 	return next.elems[r];
 }
 
@@ -653,24 +672,33 @@ static void parse_match(TEParser *parser, TEScanner  *scanner,
 	free(match_patterns_2);
 }
 
+/* this just removes the quotes from the string token */
+static void parse_str(DDString *str, TEParser *parser) {
+	give_to_dd_string(str, parser->previous.start + 1,
+			parser->previous.length - 2);
+}
+
 static void parse_string(TEParser *parser, TEScanner *scanner,
-		TEContent *content, int idx) {
+		TEContent *content) {
+	TEContentElem content_elem;
 	TEContentStr content_str;
 
 	advance(parser, scanner);
 
-	content_str.index = idx;
 	content_str.contents.chars = NULL;
-	give_to_dd_string(&content_str.contents, parser->previous.start,
-			parser->previous.length);
+	parse_str(&content_str.contents, parser);
 
-	DD_ADD_ARRAY(&(content->stat), content_str);
+	content_elem.type = TE_CONTENT_ELEM_TYPE_STR;
+	content_elem.datum.s = content_str;
+
+	DD_ADD_ARRAY(&content->contents, content_elem);
 
 	consume(parser, scanner, TOKEN_SEMICOLON, "Expecting semicolon.");
 }
 
 static void parse_switch(TEParser *parser, TEScanner *scanner,
-		TETendril *tendril, TEContent *content, int idx) {
+		TETendril *tendril, TEContent *content) {
+	TEContentElem te_content_elem;
 	TEInterpolation te_interpolation;
 	TEInterpolationElem te_interpolation_elem;
 	int n, m;
@@ -678,7 +706,6 @@ static void parse_switch(TEParser *parser, TEScanner *scanner,
 	DDString *val;
 
 	DD_INIT_ARRAY(&(te_interpolation.contents));
-	te_interpolation.index = idx;
 
 	advance(parser, scanner);
 	consume(parser, scanner, TOKEN_IDENTIFIER, "Expecting key identifier");
@@ -708,34 +735,35 @@ static void parse_switch(TEParser *parser, TEScanner *scanner,
 		consume(parser, scanner, TOKEN_STRING, "Expecting string");
 
 		te_interpolation_elem.contents.chars = NULL;
-		give_to_dd_string(&te_interpolation_elem.contents,
-			parser->previous.start, parser->previous.length);
+		parse_str(&te_interpolation_elem.contents, parser);
 
-		DD_ADD_ARRAY(&(te_interpolation.contents), te_interpolation_elem);
+		DD_ADD_ARRAY(&te_interpolation.contents, te_interpolation_elem);
 
 		consume(parser, scanner, TOKEN_SEMICOLON, "Expecting semicolon");
 	}
 	// check exhaustiveness
 
 	consume(parser, scanner, TOKEN_RIGHT_BRACE, "Expecting right brace.");
-	DD_ADD_ARRAY(&(content->dyn), te_interpolation);
+
+	te_content_elem.type = TE_CONTENT_ELEM_TYPE_INTER;
+	te_content_elem.datum.i = te_interpolation;
+
+	DD_ADD_ARRAY(&content->contents, te_content_elem);
 }
 
 static void parse_content(TEParser *parser, TEScanner  *scanner,
 		TETendril *tendril, TEContent *content) {
-	int idx = 0;
 
 	consume(parser, scanner, TOKEN_LEFT_BRACE, "Expecting left brace.");
 
 	while (parser->current.type != TOKEN_RIGHT_BRACE) {
 		if (parser->current.type == TOKEN_STRING) {
-			parse_string(parser, scanner, content, idx);
+			parse_string(parser, scanner, content);
 		} else if (parser->current.type == TOKEN_SWITCH) {
-			parse_switch(parser, scanner, tendril, content, idx);
+			parse_switch(parser, scanner, tendril, content);
 		} else {
 			error_at(&(parser->current), "Expecting string or switch");
 		}
-		idx++;
 	}
 
 	consume(parser, scanner, TOKEN_RIGHT_BRACE, "Expecting right brace");
@@ -805,46 +833,79 @@ void parse_tendrils(TEScanner *scanner, DDArrTETendril *tendrils) {
     }
 }
 
-/*static void get_te_tendril_content_matches(DDArrInt *match_indices,*/
-		/*int state, TETendril) {*/
-	/*int i, j;*/
-	/*for (i = 0; i < tendril->contents.size; i++) {*/
-		/*for (j = 0; j < tendril->contents.elems[i].match.size; j++) {*/
-			/*if (tendril->contents.elems[i].match.elems[j] == state) {*/
-				/*DD_ADD_ARRAY(&match_indices, i);*/
-			/*}*/
-		/*}*/
-	/*}*/
-/*}*/
+static void get_te_tendril_content_matches(DDArrInt *match_indices,
+		int state, TETendril *tendril) {
+	int i, j;
+	for (i = 0; i < tendril->contents.size; i++) {
+		for (j = 0; j < tendril->contents.elems[i].match.size; j++) {
+			if (tendril->contents.elems[i].match.elems[j] == state) {
+				DD_ADD_ARRAY(match_indices, i);
+			}
+		}
+	}
+}
 
-/*static void collect_contents(DDArrDDString *collect,*/
-		/*DDArrInt *state_values, TEContent *content) {*/
-	/*int i, j;*/
-	/*i = j = 0;*/
-	/*while (i < content->stat.size && j < content->dyn.size) {*/
-		/*if (!content->dyn.size || */
-				/*(content->stat.size && */
-				 /*(content->stat.elems[i].index < */
-				  /*content->dyn.elems[j].index))) {*/
-			/*DD_ADD_ARRAY(collect, content->stat.elems[i].contents);*/
-		/*}*/
+static void process_content_elem(DDString *str, TEContentElem *elem,
+		DDArrInt *state_values) {
+	int i;
+	if (elem->type == TE_CONTENT_ELEM_TYPE_STR) {
+		give_to_dd_string(str, elem->datum.s.contents.chars,
+			elem->datum.s.contents.length);
+	} else {
+		for (i = 0; i < elem->datum.i.contents.size; i++) {
+			if (state_values->elems[elem->datum.i.key] ==
+					elem->datum.i.contents.elems[i].value) {
+				give_to_dd_string(str, 
+					elem->datum.i.contents.elems[i].contents.chars,
+					elem->datum.i.contents.elems[i].contents.length);
+				break;
+			}
+		}
+	}
+}
 
-	/*}*/
-/*}*/
+static void collect_contents(DDArrDDString *collect,
+		DDArrInt *state_values, TEContent *content) {
+	int i;
+	DDString tmp_str;
+	
+	for (i = 0; i < content->contents.size; i++) {
+		tmp_str.chars = NULL;
+		process_content_elem(&tmp_str, &content->contents.elems[i],
+				state_values);
+		DD_ADD_ARRAY(collect, tmp_str);
+	}
+}
 
 
-/*int get_te_tendril_content(DDArrString *result, int state,*/
-		/*TETendril *tendril) {*/
-	/*int i, j;*/
-	/*DDArrInt match_indices;*/
+int get_te_tendril_content(DDArrDDArrDDString *result, int state,
+		TETendril *tendril) {
+	int i;
+	DDArrInt match_indices;
+	DDArrInt state_values;
+	DDArrDDString tmp_str_arr;
 
-	/*DD_INIT_ARRAY(&match_indices);*/
-	/*get_te_tendril_content_matches(&match_indices, state, tendril);*/
+	DD_INIT_ARRAY(&match_indices);
+	get_te_tendril_content_matches(&match_indices, state, tendril);
 
-	/*if (match_indices.size == 0)*/
-		/*return 0;*/
+	if (match_indices.size == 0)
+		return 0;
+
+	DD_INIT_ARRAY(&state_values);
+	DD_INIT_ARRAY_SIZE(&state_values, tendril->legend.keys.size);
+	values_from_int(state, &state_values, &tendril->legend);
+
+	for (i = 0; i < match_indices.size; i++) {
+		DD_INIT_ARRAY(&tmp_str_arr);
+		collect_contents(&tmp_str_arr, &state_values, 
+				&tendril->contents.elems[match_indices.elems[i]]);
+		DD_ADD_ARRAY(result, tmp_str_arr);
+	}
+
+	DD_FREE_ARRAY(&state_values);
+	DD_FREE_ARRAY(&match_indices);
 
 
 
-	/*return 1;*/
-/*}*/
+	return 1;
+}
