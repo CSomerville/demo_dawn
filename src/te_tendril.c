@@ -197,93 +197,117 @@ int te_transition(TETendril *tendril, int current) {
 		exit(1);
 	}
 	r = rand() % next.size;
-	printf("next size: %d, r: %d\n", next.size, r);
 	return next.elems[r];
 }
 
-static void add_transitions(TETendril *tendril, DDArrDDArrDDString *current, 
-		DDArrDDArrDDString *next) {
-	DDArrInt tmp;
-	DDArrDDArrInt cur;
-	DDArrDDArrInt *final_cur;
-	DDArrInt ne;
-	int i, j, n, x, y;
-	bool found;
+/* writing out what I think this algo is/should be:
+ * convert cur and next to bool arrays?
+ * for current, convert bool array to series of states (int array).
+ * for each state of current, calculate next and add to graph.
+ */ 
 
-	DD_INIT_ARRAY(&tmp);
-	DD_INIT_ARRAY(&cur);
-	DD_INIT_ARRAY(&ne);
+static void strs_to_int_vals(TETendrilLegend *legend,
+		DDArrDDArrDDString *strs, DDArrDDArrInt *val_list) {
+	int i, j, k, idx;
+	DDArrInt vals;
 
-	for (i = 0; i < tendril->legend.keys.size; i++) {
-		found = false;
-		for (j = 0; j < current->size; j++) {
-			if (strcmp(tendril->legend.keys.elems[i].chars,
-						current->elems[j].elems[0].chars) == 0) {
-				found = true;
+	for (i = 0; i < legend->keys.size; i++) {
+		DD_INIT_ARRAY(&vals);
+		idx = -1;
+		for (j = 0; j < strs->size; j++) {
+			if (!strcmp(legend->keys.elems[i].chars,
+						strs->elems[j].elems[0].chars)) {
+				idx = j;
 				break;
 			}
 		}
-		if (!found) {
-			for (j = 0; j < tendril->legend.values.elems[i].size; j++) {
-				DD_ADD_ARRAY(&tmp, j);
-			}
-		} else {
-			for (j = 1; j < current->elems[i].size; j++) {
-				n = value_index_tendril(tendril, &(current->elems[i].elems[j]), i);
-				DD_ADD_ARRAY(&tmp, n);
-			}
-		}
-		DD_ADD_ARRAY(&cur, tmp);
-		DD_INIT_ARRAY(&tmp);
-	}
-
-	for (i = 0; i < tendril->legend.keys.size; i++) {
-		found = false;
-		for (j = 0; j < next->size; j++) {
-			if (strcmp(tendril->legend.keys.elems[i].chars,
-						current->elems[j].elems[0].chars) == 0) {
-				found = true;
-				break;
+		if (idx >= 0) {
+			for (j = 0; j < legend->values.elems[i].size; j++) {
+				for (k = 1; k < strs->elems[idx].size; k++) {
+					if (!strcmp(legend->values.elems[i].elems[j].chars,
+								strs->elems[idx].elems[k].chars)) {
+						DD_ADD_ARRAY(&vals, j);
+					}
+				}
 			}
 		}
-		if (!found) {
-			DD_ADD_ARRAY(&ne, -1);
-		} else {
-			n = value_index_tendril(tendril, &(next->elems[i].elems[1]), i);
-			DD_ADD_ARRAY(&ne, n);
-		}
+		DD_ADD_ARRAY(val_list, vals);
 	}
-
-	final_cur = cartesian_product(&cur);
-
-	for (i = 0; i < final_cur->size; i++) {
-		DD_INIT_ARRAY(&tmp);
-		x = int_from_values(&(final_cur->elems[i]), &(tendril->legend));
-		for (j = 0; j < final_cur->elems[i].size; j++) {
-			if (ne.elems[j] == -1) {
-				DD_ADD_ARRAY(&tmp, final_cur->elems[i].elems[j]);
-			} else {
-				DD_ADD_ARRAY(&tmp, ne.elems[j]);
-			}
-		}
-		y = int_from_values(&tmp, &(tendril->legend));
-
-		if (!(edge_in_graph(tendril->graph, x, y))) {
-			insert_edge(tendril->graph, x, y, tendril->graph->directed);
-		}
-		DD_FREE_ARRAY(&tmp);
-	}
-	for (i = 0; i < cur.size; i++) {
-		DD_FREE_ARRAY(&cur.elems[i]);
-	}
-	DD_FREE_ARRAY(&cur);
-	for (i = 0; i < final_cur->size; i++) {
-		DD_FREE_ARRAY(&final_cur->elems[i]);
-	}
-	DD_FREE_ARRAY(final_cur);
-	free(final_cur);
-	DD_FREE_ARRAY(&ne);
 }
+
+static void fill_in_cur_vals(TETendrilLegend *legend,
+		DDArrDDArrInt *cur_vals) {
+	int i, j;
+	for (i = 0; i < cur_vals->size; i++) {
+		if (cur_vals->elems[i].size == 0) {
+			for (j = 0; j < legend->values.elems[i].size; j++) {
+				DD_ADD_ARRAY(&cur_vals->elems[i], j);
+			}
+		}
+	}
+}
+
+static int next_from_cur(TETendrilLegend *legend, DDArrInt *cur,
+		DDArrDDArrInt *next) {
+	DDArrInt next_final_arr;
+	int i, next_final;
+
+	DD_INIT_ARRAY(&next_final_arr);
+	for (i = 0; i < cur->size; i++) {
+		if (next->elems[i].size == 0) {
+			DD_ADD_ARRAY(&next_final_arr, cur->elems[i]);
+		} else {
+			DD_ADD_ARRAY(&next_final_arr, next->elems[i].elems[0]);
+		}
+	}
+
+	next_final = int_from_values(&next_final_arr, legend);
+	DD_FREE_ARRAY(&next_final_arr);
+	return next_final;
+}
+
+
+static void add_transitions(TETendril *tendril,
+		DDArrDDArrDDString *current, DDArrDDArrDDString *next) {
+	DDArrDDArrInt vals;
+	DDArrDDArrInt *current_states;
+	int i, next_int, cur_int;
+
+	DD_INIT_ARRAY(&vals);
+	strs_to_int_vals(&tendril->legend, current, &vals);
+	fill_in_cur_vals(&tendril->legend, &vals);
+
+	current_states = cartesian_product(&vals);
+
+	for (i = 0; i < vals.size; i++) {
+		DD_FREE_ARRAY(&vals.elems[i]);
+	}
+	DD_FREE_ARRAY(&vals);
+
+	DD_INIT_ARRAY(&vals);
+	strs_to_int_vals(&tendril->legend, next, &vals);
+
+	for (i = 0; i < current_states->size; i++) {
+		next_int = next_from_cur(&tendril->legend,
+				&current_states->elems[i], &vals);
+		cur_int = int_from_values(&current_states->elems[i],
+				&tendril->legend);
+		if (!(edge_in_graph(tendril->graph, cur_int, next_int))) {
+			insert_edge(tendril->graph, cur_int, next_int,
+					tendril->graph->directed);
+		}
+	}
+
+	for (i = 0; i < vals.size; i++) {
+		DD_FREE_ARRAY(&vals.elems[i]);
+	}
+	DD_FREE_ARRAY(&vals);
+	for (i = 0; i < current_states->size; i++) {
+		DD_FREE_ARRAY(&current_states->elems[i]);
+	}
+	DD_FREE_ARRAY(current_states);
+	free(current_states);
+} 
 
 static void error_at(TEToken *token, const char *msg) {
     fprintf(stderr, "[line %d] Error", token->line);

@@ -221,8 +221,18 @@ void te_tendril_transition_case_2(void) {
 	DD_ADD_ARRAY(&values, 0);
 	y = int_from_values(&values, &tendril.legend);
 	DD_FREE_ARRAY(&values);
-	printf("x: %d, y: %d\n", x, y);
-	print_graph(tendril.graph);
+	assert(edge_in_graph(tendril.graph, x, y));
+
+	DD_ADD_ARRAY(&values, 0);
+	DD_ADD_ARRAY(&values, 1);
+	DD_ADD_ARRAY(&values, 1);
+	x = int_from_values(&values, &tendril.legend);
+	DD_FREE_ARRAY(&values);
+	DD_ADD_ARRAY(&values, 0);
+	DD_ADD_ARRAY(&values, 2);
+	DD_ADD_ARRAY(&values, 1);
+	y = int_from_values(&values, &tendril.legend);
+	DD_FREE_ARRAY(&values);
 	assert(edge_in_graph(tendril.graph, x, y));
 
 	free_te_tendrils(&tendrils);

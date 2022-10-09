@@ -9,4 +9,5 @@ test-te :
 	rm ./bin/test_te
 
 fe-scratch :
-	gcc src/fe_scratch.c src/te_*c src/dd_*c -g -Wall -Wextra -o bin/fe_scratch
+	gcc src/fe_*c src/te_*c src/dd_*c \
+		-g -Wall -Wextra -o bin/fe_scratch

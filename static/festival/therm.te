@@ -1,0 +1,271 @@
+StateSpace Therm {
+	Seq: Nom | Verb | Pred | Part | Connect | Aside;	
+	Doer: Unset | Ghosts | Topoi;
+	Action: Unset | Stealing | Earning;
+	ProgPart: Unset | Driving | Smooching;
+}
+StartOn Therm {
+	Seq: Nom;
+	Doer: Unset;
+	Action: Unset;
+	ProgPart: Unset;
+}
+
+TransitionOn Therm {
+	current {
+		Doer: Unset;
+		Action: Unset;
+		ProgPart: Unset;
+	}
+	next {
+		Doer: Ghosts;
+		Action: Stealing;
+		ProgPart: Driving;
+	}
+}
+
+TransitionOn Therm {
+	current {
+		Doer: Unset;
+		Action: Unset;
+		ProgPart: Unset;
+	}
+	next {
+		Doer: Ghosts;
+		Action: Earning;
+		ProgPart: Driving;
+	}
+}
+
+TransitionOn Therm {
+	current {
+		Doer: Unset;
+		Action: Unset;
+		ProgPart: Unset;
+	}
+	next {
+		Doer: Ghosts;
+		Action: Earning;
+		ProgPart: Smooching;
+	}
+}
+
+TransitionOn Therm {
+	current {
+		Doer: Unset;
+		Action: Unset;
+		ProgPart: Unset;
+	}
+	next {
+		Doer: Topoi;
+		Action: Stealing;
+		ProgPart: Driving;
+	}
+}
+
+TransitionOn Therm {
+	current {
+		Doer: Unset;
+		Action: Unset;
+		ProgPart: Unset;
+	}
+	next {
+		Doer: Topoi;
+		Action: Earning;
+		ProgPart: Driving;
+	}
+}
+
+TransitionOn Therm {
+	current {
+		Doer: Unset;
+		Action: Unset;
+		ProgPart: Unset;
+	}
+	next {
+		Doer: Topoi;
+		Action: Earning;
+		ProgPart: Smooching;
+	}
+}
+
+TransitionOn Therm {
+	current {
+		Seq: Nom;
+		Doer: Ghosts | Topoi;
+		Action: Stealing | Earning;
+		ProgPart: Driving | Smooching;
+	}
+	next {
+		Seq: Verb;
+	}
+}
+
+TransitionOn Therm {
+	current {
+		Seq: Verb;
+		Doer: Ghosts | Topoi;
+		Action: Stealing | Earning;
+		ProgPart: Driving | Smooching;
+	}
+	next {
+		Seq: Pred;
+	}
+}
+
+TransitionOn Therm {
+	current {
+		Seq: Pred;
+		Doer: Ghosts | Topoi;
+		Action: Stealing | Earning;
+		ProgPart: Driving | Smooching;
+	}
+	next {
+		Seq: Part;
+	}
+}
+
+TransitionOn Therm {
+	current {
+		Seq: Part;
+		Doer: Ghosts | Topoi;
+		Action: Stealing | Earning;
+		ProgPart: Driving | Smooching;
+	}
+	next {
+		Seq: Connect;
+	}
+}
+
+TransitionOn Therm {
+	current {
+		Seq: Connect;
+		Doer: Ghosts | Topoi;
+		Action: Stealing | Earning;
+		ProgPart: Driving | Smooching;
+	}
+	next {
+		Seq: Aside;
+	}
+}
+
+TransitionOn Therm {
+	current {
+		Seq: Aside;
+	}
+	next {
+		Seq: Nom;
+		Doer: Unset;
+		Action: Unset;
+		ProgPart: Unset;
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: Nom;
+		Doer: Ghosts;
+	}
+	content {
+		"two ghosts from thermodynamism's foamy wake";
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: Nom;
+		Doer: Topoi;
+	}
+	content {
+		"pair o thrown outta heat topoi";
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: Verb;
+		Action: Stealing;
+	}
+	content {
+		"rob heat from";
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: Verb;
+		Action: Earning;
+	}
+	content {
+		"mine Bauxite using hotness bucks paid by";
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: Pred;
+		Doer: Ghosts;
+	}
+	content {
+		"pair o thrown outta heat topoi";
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: Pred;
+		Doer: Topoi;
+	}
+	content {
+		"two ghosts from thermodynamism's foamy wake";
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: Part;
+		ProgPart: Smooching;
+	}
+	content {
+		"smooching";
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: Part;
+		ProgPart: Driving;
+	}
+	content {
+		"driving";
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: Connect;
+	}
+	content {
+		"when now";
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: Aside;
+		ProgPart: Smooching;
+	}
+	content {
+		"lips frigid, ashen cease, flake off";
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: Aside;
+		ProgPart: Driving;
+	}
+	content {
+		"cold, stiff car ceases, dessicates";
+	}
+}
