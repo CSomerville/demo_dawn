@@ -100,6 +100,18 @@ void dd_string(void) {
 	free_string(str_b);
 	free_string(result);
 
+	/* mutate concat */
+	const char *test3 = "abc";
+	const char *test4 = "def";
+	DDString *str_c, *str_d;
+	str_c = copy_string(test3, 3);
+	str_d = copy_string(test4, 3);
+	dd_string_concat_mutate(str_c, str_d);
+	assert(str_c->length == 6);
+	assert(!strcmp("abcdef", str_c->chars));
+	free_string(str_c);
+	free_string(str_d);
+
 	/* give to dd_string */
 	DDString dd_str;
 	dd_str.chars = NULL;

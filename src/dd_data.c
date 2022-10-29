@@ -13,6 +13,11 @@ void* reallocate(void* ptr, size_t old_size, size_t new_size) {
     return result;
 }
 
+void init_dd_string(DDString *dd_string) {
+	dd_string->length = 0;
+	dd_string->chars = NULL;
+}
+
 DDString* copy_string(const char* chars, int length) {
     DDString* dd_str = DD_ALLOCATE(DDString, sizeof(DDString));
     char* allocated = DD_ALLOCATE(char, length + 1);
@@ -32,6 +37,15 @@ void give_to_dd_string(DDString *dd_str, const char* chars, int length) {
     allocated[length] = '\0';
     dd_str->length = length;
     dd_str->chars = allocated;
+}
+
+void dd_string_concat_mutate(DDString *a, DDString *b) {
+	DDString *tmp_str;
+	tmp_str = dd_string_concat(a, b);
+	free_dd_chars(a);
+	a->length = tmp_str->length;
+	a->chars = tmp_str->chars;
+	free(tmp_str);
 }
 
 DDString* dd_string_concat(DDString *a, DDString *b) {

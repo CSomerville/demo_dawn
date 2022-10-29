@@ -28,7 +28,7 @@ int main(void) {
 
 	parse_tendrils(&scanner, &tendrils);
 
-	run_n_steps(&tendrils.elems[0], &result, 0, 20);
+	run_n_steps(&tendrils.elems[0], &result, 0, 60);
 
 	for (i = 0; i < result.size; i++) {
 		printf("%s ", result.elems[i].chars);

@@ -1,5 +1,6 @@
 StateSpace Therm {
-	Seq: Nom | Verb | Pred | Part | Connect | Aside;	
+	Seq: Nom | Verb | Pred | Part | Connect | Aside | PartObj
+			| Insured | Insurer | InsureZone | Reviver;
 	Doer: Unset | Ghosts | Topoi;
 	Action: Unset | Stealing | Earning;
 	ProgPart: Unset | Driving | Smooching;
@@ -152,6 +153,78 @@ TransitionOn Therm {
 TransitionOn Therm {
 	current {
 		Seq: Aside;
+		Doer: Ghosts | Topoi;
+		Action: Stealing | Earning;
+		ProgPart: Driving | Smooching;
+	}
+	next {
+		Seq: Reviver;
+	}
+}
+
+TransitionOn Therm {
+	current {
+		Seq: Reviver;
+	}
+	next {
+		Seq: Nom;
+		Doer: Unset;
+		Action: Unset;
+		ProgPart: Unset;
+	}
+}
+
+TransitionOn Therm {
+	current {
+		Seq: Part;
+		Doer: Ghosts | Topoi;
+		Action: Stealing | Earning;
+		ProgPart: Driving | Smooching;
+	}
+	next {
+		Seq: PartObj;
+	}
+}
+
+TransitionOn Therm {
+	current {
+		Seq: PartObj;
+		Doer: Ghosts | Topoi;
+		Action: Stealing | Earning;
+		ProgPart: Driving | Smooching;
+	}
+	next {
+		Seq: Insured;
+	}
+}
+
+TransitionOn Therm {
+	current {
+		Seq: Insured;
+		Doer: Ghosts | Topoi;
+		Action: Stealing | Earning;
+		ProgPart: Driving | Smooching;
+	}
+	next {
+		Seq: Insurer;
+	}
+}
+
+TransitionOn Therm {
+	current {
+		Seq: Insurer;
+		Doer: Ghosts | Topoi;
+		Action: Stealing | Earning;
+		ProgPart: Driving | Smooching;
+	}
+	next {
+		Seq: InsureZone;
+	}
+}
+
+TransitionOn Therm {
+	current {
+		Seq: InsureZone;
 	}
 	next {
 		Seq: Nom;
@@ -174,10 +247,30 @@ ContentOn Therm {
 ContentOn Therm {
 	match {
 		Seq: Nom;
+		Doer: Ghosts;
+	}
+	content {
+		"two ghosts of, as it were, solar generosity's burn victims";
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: Nom;
 		Doer: Topoi;
 	}
 	content {
 		"pair o thrown outta heat topoi";
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: Nom;
+		Doer: Topoi;
+	}
+	content {
+		"pair of ember diademmed topoi";
 	}
 }
 
@@ -197,7 +290,7 @@ ContentOn Therm {
 		Action: Earning;
 	}
 	content {
-		"mine Bauxite using hotness bucks paid by";
+		"strip mine Bauxite using hotness bucks paid by";
 	}
 }
 
@@ -267,5 +360,70 @@ ContentOn Therm {
 	}
 	content {
 		"cold, stiff car ceases, dessicates";
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: PartObj;
+		ProgPart: Smooching;
+	}
+	content {
+		"in real beaut of coastal property";
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: PartObj;
+		ProgPart: Driving;
+	}
+	content {
+		"a loony lime fendered car";
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: Insured;
+	}
+	content {
+		"insured";
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: Insurer;
+	}
+	content {
+		"by scribal risk understanders";
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: InsureZone;
+	}
+	content {
+		"under an actuarial horizon where";
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: InsureZone;
+	}
+	content {
+		"in event-smears spreadsheeted out futurewards when";
+	}
+}
+
+ContentOn Therm {
+	match {
+		Seq: Reviver;
+	}
+	content {
+		"to be, by war-funded thinkers, studied and revived until";
 	}
 }

@@ -103,9 +103,11 @@ typedef struct {
 } DDString;
 
 void* reallocate(void* ptr, size_t old_size, size_t new_size);
+void init_dd_string(DDString *dd_string);
 DDString* copy_string(const char* chars, int length);
 void give_to_dd_string(DDString *dd_str, const char* chars, int length);
 DDString* dd_string_concat(DDString *a, DDString *b);
+void dd_string_concat_mutate(DDString *a, DDString *b);
 void free_string(DDString* dd_string);
 void free_dd_chars(DDString *dd_str);
 
