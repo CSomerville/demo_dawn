@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "di_lib.h"
+#include "dd_data.h"
 
 void init_di_syllable(DISyllable *di_syllable) {
 	init_dd_string(&di_syllable->pron);
@@ -147,6 +148,41 @@ void string_to_di_entry(DDString *str, DIDictEntry *entry) {
 		}
 		DD_ADD_ARRAY(&entry->pronunciation, tmp_syl);
 		i = j;
+	}
+}
+
+/* If a word isn't found it crashes. Philosophically don't love this
+ * behavior obviously but at the moment I don't care.
+ */
+void di_entries_for_string(DDString *str, DDArrDIIndexedEntry *entries) {
+	DDString tmp_str;
+	DIDictEntry tmp_entry;
+	DIIndexedEntry tmp_indexed_entry;
+	int start, result, word_start, word_end, i;
+	start = 0;
+	while ((result = get_next_dd_string_word_bounds(str, start,
+				&word_start, &word_end)) == 0) {
+		init_dd_string(&tmp_str);
+		give_to_dd_string(&tmp_str, &str->chars[word_start], 
+				word_end - word_start);
+		for (i = 0; i < tmp_str.length; i++) {
+			tmp_str.chars[i] = toupper(tmp_str.chars[i]);
+		}
+
+		init_di_dict_entry(&tmp_entry);
+		if (!find_entry(&tmp_entry, &tmp_str, "./static/cmudict/raw.txt")) {
+			printf("Could not find dict word: %s\n", tmp_str.chars);
+			exit(1);
+		}
+
+		free_dd_chars(&tmp_str);
+
+		tmp_indexed_entry.index = word_start;
+		tmp_indexed_entry.length = tmp_str.length;
+		tmp_indexed_entry.entry = tmp_entry;
+		DD_ADD_ARRAY(entries, tmp_indexed_entry);
+
+		start = word_end;
 	}
 }
 

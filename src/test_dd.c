@@ -125,6 +125,29 @@ void dd_string(void) {
 	printf("success.\n");
 }
 
+void dd_word_bounds(void) {
+	printf("testing dd_word_bounds... ");
+	DDString dd_str;
+	int start, word_start, word_end, result;
+	init_dd_string(&dd_str);
+	give_to_dd_string(&dd_str, "two ghosts in thermodynamism's foamy", 36);
+	start = 0;
+	result = get_next_dd_string_word_bounds(&dd_str, start, &word_start,
+			&word_end);
+	assert(result == 0);
+	assert(word_start == 0);
+	assert(word_end == 3);
+	start = word_end;
+	result = get_next_dd_string_word_bounds(&dd_str, start, &word_start,
+			&word_end);
+	assert(result == 0);
+	assert(word_start == 4);
+	assert(word_end == 10);
+
+	free_dd_chars(&dd_str);
+	printf("success.\n");
+}
+
 void dd_graph(void) {
 	printf("testing dd_graph... ");
 	/* simple graph */
@@ -180,6 +203,7 @@ int main(void) {
 	dd_array();
 	dd_queue();
 	dd_string();
+	dd_word_bounds();
 	dd_graph();
 	dd_cart_concat();
 }

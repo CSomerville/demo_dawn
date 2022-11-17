@@ -147,7 +147,7 @@ void di_find_entry(void) {
 }
 
 void di_entries_string(void) {
-	printf("testing di_find_entry...");
+	printf("testing di_find_entries...");
 	int i;
 	DDString str;
 	DDArrDIIndexedEntry entries;
@@ -156,7 +156,13 @@ void di_entries_string(void) {
 
 	give_to_dd_string(&str, "porpoise, jut", 13);
 	di_entries_for_string(&str, &entries);
-	assert(!strcmp(entries.elems[0].entry.word, "PORPOISE"));
+	assert(!strcmp(entries.elems[0].entry.word.chars, "PORPOISE"));
+	assert(entries.elems[0].index == 0);
+	assert(entries.elems[0].length == 8);
+
+	assert(!strcmp(entries.elems[1].entry.word.chars, "JUT"));
+	assert(entries.elems[1].index == 10);
+	assert(entries.elems[1].length == 3);
 
 	for (i = 0; i < entries.size; i++) {
 		free_di_dict_entry(&entries.elems[i].entry);

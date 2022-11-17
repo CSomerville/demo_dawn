@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "dd_data.h"
 
@@ -66,6 +67,26 @@ DDString* dd_string_concat(DDString *a, DDString *b) {
 
 void free_dd_chars(DDString *dd_str) {
     reallocate(dd_str->chars, sizeof(char) * (dd_str->length + 1), 0);
+}
+
+static bool is_non_word(char c) {
+	return c == ' ' || c == ',' || c == '\n';
+}
+
+int get_next_dd_string_word_bounds(DDString *dd_str, int start,
+		int *word_start, int *word_end) {
+	int i = start;
+	if (i >= dd_str->length)
+		return 1;
+	while (is_non_word(dd_str->chars[i]))
+		i++;
+	if (i >= dd_str->length)
+		return 1;
+	*word_start = i;
+	while (!is_non_word(dd_str->chars[i]) && i < dd_str->length)
+		i++;
+	*word_end = i;
+	return 0;
 }
 
 void free_dd_arr_dd_str(DDArrDDString *dd_arr_dd_str) {

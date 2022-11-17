@@ -20,6 +20,7 @@ typedef struct {
 
 typedef struct {
 	int index;
+	int length;
 	DIDictEntry entry;
 } DIIndexedEntry;
 
