@@ -13,6 +13,10 @@ test-di :
 	valgrind --leak-check=full --show-leak-kinds=all ./bin/test_di
 	rm ./bin/test_di
 
-fe-scratch :
-	gcc src/fe_*c src/te_*c src/dd_*c \
-		-g -Wall -Wextra -o bin/fe_scratch
+scratch-fe :
+	gcc src/fe_*c src/te_*c src/dd_*c src/scratch_fe.c \
+		-g -Wall -Wextra -o bin/scratch_fe
+
+scratch-fe-nll :
+	gcc src/fe_*c src/te_*c src/dd_*c src/scratch_fe_nll.c \
+		-g -Wall -Wextra -o bin/scratch_nll

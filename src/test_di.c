@@ -86,13 +86,15 @@ void di_string_entry(void) {
 	printf("testing di_string_entry... ");
 	DDString orig;
 	DIDictEntry entry;
+	int result;
 
 	init_dd_string(&orig);
 	give_to_dd_string(&orig, "ACT  AE1 K T\n", 13);
 	init_di_dict_entry(&entry);
 
-	string_to_di_entry(&orig, &entry);
+	result = string_to_di_entry(&orig, &entry);
 
+	assert(result == 0);
 	assert(!strcmp(entry.word.chars, "ACT"));
 	assert(entry.variant == 0);
 	assert(!strcmp(entry.pronunciation.elems[0].pron.chars, "AE"));
@@ -104,6 +106,15 @@ void di_string_entry(void) {
 
 	free_dd_chars(&orig);
 	free_di_dict_entry(&entry);
+
+	init_dd_string(&orig);
+	give_to_dd_string(&orig, "Act AE1 K T\n", 13);
+	init_di_dict_entry(&entry);
+
+	result = string_to_di_entry(&orig, &entry);
+	assert(result == 1);
+
+	free_dd_chars(&orig);
 
 	printf("success\n");
 }

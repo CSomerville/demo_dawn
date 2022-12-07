@@ -115,14 +115,17 @@ void entry_to_string(DIDictEntry *entry, DDString *str) {
 	free_dd_chars(&tmp_str);
 }
 
-void string_to_di_entry(DDString *str, DIDictEntry *entry) {
+int string_to_di_entry(DDString *str, DIDictEntry *entry) {
 	int i, j;
 	DDString tmp_str;
 	DISyllable tmp_syl;
 
 	i = 0;
-	while (!entry_end_of_word(&str->chars[i]))
+	while (!entry_end_of_word(&str->chars[i])) {
+		if (!isupper(str->chars[i])) 
+			return 1;
 		i++;
+	}
 	init_dd_string(&tmp_str);
 	give_to_dd_string(&tmp_str, str->chars, i);
 	entry->word = tmp_str;
@@ -149,6 +152,7 @@ void string_to_di_entry(DDString *str, DIDictEntry *entry) {
 		DD_ADD_ARRAY(&entry->pronunciation, tmp_syl);
 		i = j;
 	}
+	return 0;
 }
 
 /* If a word isn't found it crashes. Philosophically don't love this

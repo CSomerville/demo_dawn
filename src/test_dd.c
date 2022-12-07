@@ -122,6 +122,30 @@ void dd_string(void) {
 	assert(!strcmp(test_give, dd_str.chars));
 	free_dd_chars(&dd_str);
 
+	/* dd copy dd_string */
+	DDString target;
+	DDString to_copy;
+	init_dd_string(&target);
+	init_dd_string(&to_copy);
+	give_to_dd_string(&to_copy, "blarg", 5);
+	dd_copy_dd_string(&target, &to_copy);
+	assert(!strcmp("blarg", target.chars));
+	assert(target.length == 5);
+	free_dd_chars(&to_copy);
+	free_dd_chars(&target);
+
+	/* dd_repeat_dd_string */
+	DDString target_2;
+	DDString to_repeat;
+	init_dd_string(&target_2);
+	init_dd_string(&to_repeat);
+	give_to_dd_string(&to_repeat, "blarg", 5);
+	dd_repeat_dd_string(&target_2, &to_repeat, 3);
+	assert(!strcmp("blargblargblarg", target_2.chars));
+	assert(target_2.length == 15);
+	free_dd_chars(&target_2);
+	free_dd_chars(&to_repeat);
+
 	printf("success.\n");
 }
 

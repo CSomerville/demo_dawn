@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 
 char* read_file(const char* path) {
     FILE* file = fopen(path, "rb");
@@ -27,4 +28,11 @@ char* read_file(const char* path) {
 
     fclose(file);
     return buffer;
+}
+
+/* shamelessly ripped from https://stackoverflow.com/questions/55766058/how-can-i-generate-random-doubles-in-c
+ */
+double rand_double(void) {
+	uint64_t r53 = ((uint64_t)(rand()) << 21) ^ (rand() >> 2);
+	return (double)r53 / 9007199254740991.0; // 2^53 - 1
 }

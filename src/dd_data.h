@@ -110,6 +110,8 @@ DDString* dd_string_concat(DDString *a, DDString *b);
 void dd_string_concat_mutate(DDString *a, DDString *b);
 int get_next_dd_string_word_bounds(DDString *dd_str, int start,
 		int *word_start, int *word_end);
+void dd_copy_dd_string(DDString *target, DDString *dd_str);
+void dd_repeat_dd_string(DDString *target, DDString *to_repeat, int n);
 void free_string(DDString* dd_string);
 void free_dd_chars(DDString *dd_str);
 

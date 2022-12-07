@@ -89,6 +89,24 @@ int get_next_dd_string_word_bounds(DDString *dd_str, int start,
 	return 0;
 }
 
+void dd_copy_dd_string(DDString *target, DDString *dd_str) {
+	give_to_dd_string(target, dd_str->chars, dd_str->length);
+	target->length = dd_str->length;
+}
+
+void dd_repeat_dd_string(DDString *target, DDString *to_repeat, int n) {
+	int i, j, idx;
+	target->length = to_repeat->length * n;
+	target->chars = DD_ALLOCATE(char, to_repeat->length * n + 1);
+	for (i = 0; i < n; i++) {
+		for (j = 0; j < to_repeat->length; j++) {
+			idx = (i * to_repeat->length) + j;
+			target->chars[idx] = to_repeat->chars[j];
+		}
+	}
+	target->chars[to_repeat->length * n] = '\0';
+}
+
 void free_dd_arr_dd_str(DDArrDDString *dd_arr_dd_str) {
 	int i;
 	for (i = 0; i < dd_arr_dd_str->size; i++) {

@@ -32,7 +32,7 @@ int entry_comp(DDString *word, const char *line);
 bool find_entry(DIDictEntry *match, DDString *word, const char *path);
 void di_dict_entry_to_str(DIDictEntry *entry, DDString *str);
 void entry_to_string(DIDictEntry *entry, DDString *str);
-void string_to_di_entry(DDString *str, DIDictEntry *entry);
+int string_to_di_entry(DDString *str, DIDictEntry *entry);
 void di_entries_for_string(DDString *str, DDArrDIIndexedEntry *entries);
 void free_di_dict_entry(DIDictEntry *di_dict_entry);
 
