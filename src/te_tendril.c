@@ -901,6 +901,23 @@ static void collect_contents(DDArrDDString *collect,
 	}
 }
 
+void get_value_from_state(DDString *value, TETendril *tendril, int state,
+		DDString *key) {
+	DDArrInt state_values;
+	int key_index;
+	int val_index;
+
+	DD_INIT_ARRAY(&state_values);
+	DD_INIT_ARRAY_SIZE(&state_values, tendril->legend.keys.size);
+	values_from_int(state, &state_values, &tendril->legend);
+
+	key_index = key_index_tendril(tendril, key);
+	val_index = state_values.elems[key_index];
+	dd_copy_dd_string(value, 
+			&tendril->legend.values.elems[key_index].elems[val_index]);
+
+	DD_FREE_ARRAY(&state_values);
+}
 
 int get_te_tendril_content(DDArrDDArrDDString *result, int state,
 		TETendril *tendril) {

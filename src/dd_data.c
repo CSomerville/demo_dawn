@@ -89,6 +89,14 @@ int get_next_dd_string_word_bounds(DDString *dd_str, int start,
 	return 0;
 }
 
+bool dd_string_equal(DDString *a, DDString *b) {
+	if (a->length != b->length)
+		return false;
+	if (a->chars == NULL || b->chars == NULL)
+		return false;
+	return (!strcmp(a->chars, b->chars));
+}
+
 void dd_copy_dd_string(DDString *target, DDString *dd_str) {
 	give_to_dd_string(target, dd_str->chars, dd_str->length);
 	target->length = dd_str->length;

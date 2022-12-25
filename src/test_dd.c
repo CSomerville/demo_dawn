@@ -27,6 +27,12 @@ void dd_array(void) {
 	assert(dd_arr_int.capacity == 16);
 	assert(dd_arr_int.elems[9] == 9);
 
+	/* remove array */
+	DD_REMOVE_ARRAY(&dd_arr_int, 3);
+	assert(dd_arr_int.size == 9);
+	assert(dd_arr_int.elems[2] == 2);
+	assert(dd_arr_int.elems[3] == 4);
+
 	/* free array, init array, confirm empty */
 	DD_FREE_ARRAY(&dd_arr_int);
 	DD_INIT_ARRAY(&dd_arr_int);
@@ -52,6 +58,8 @@ void dd_array(void) {
 	for (i = 0; i < dd_arr_int.size; i++) dd_arr_int.elems[i] = i;
 	assert(dd_arr_int.elems[6] == 6);
 	DD_FREE_ARRAY(&dd_arr_int);
+
+
 	
 	printf("success.\n");
 }
@@ -76,6 +84,7 @@ void dd_queue(void) {
 	printf("success.\n");
 }
 
+/* TODO: test dd_string_equal */
 void dd_string(void) {
 	printf("testing dd_string... ");
 	/* copy string */

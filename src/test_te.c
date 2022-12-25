@@ -296,10 +296,54 @@ void te_tendril_content(void) {
 	printf("success\n");
 }
 
+void te_tendril_get_value_from_state(void) {
+	printf("testing te_tendril_get_value_from_state... ");
+	TEScanner scanner;
+	TETendril tendril;
+	DDArrTETendril tendrils;
+	DDString value;
+	DDString key;
+	DDString *name = copy_string("Test", 4);
+	const char *source =
+		"StateSpace Test {\n"
+		"	shape: Oval | Square | Rectangle | Circle;\n"
+		"	color: Yellow | Fuschia | Lime;\n"
+		"	texture: Bumpy | Smooth;\n"
+		"}\n"
+		"TransitionOn Test {\n"
+		"	current {\n"
+		"		shape: Oval;\n"
+		"	}\n"
+		"	next {\n"
+		"		shape: Square;\n"
+		"	}\n"
+		"}\n";
+
+	init_dd_string(&value);
+	init_dd_string(&key);
+	init_te_scanner(&scanner, source);
+	DD_INIT_ARRAY(&tendrils);
+
+	parse_tendrils(&scanner, &tendrils);
+	tendril = *(lookup_tendril_by_name(&tendrils, name));
+	free_string(name);
+
+	give_to_dd_string(&key, "shape", 5);
+	get_value_from_state(&value, &tendril, 0, &key);
+	assert(!strcmp(value.chars, "Oval"));
+	free_dd_chars(&key);
+	free_dd_chars(&value);
+
+	free_te_tendrils(&tendrils);
+	DD_FREE_ARRAY(&tendrils);
+	printf("success\n");
+}
+
 int main(void) {
 	te_tendril_legend();
 	te_tendril_start();
 	te_tendril_transition();
 	te_tendril_transition_case_2();
 	te_tendril_content();
+	te_tendril_get_value_from_state();
 }

@@ -1,0 +1,168 @@
+StateSpace Owing {
+	Seq: Name | And | Has | Sees | Wants;
+	HasDone: True | False;
+	WantsDone: True | False;
+	SeesCurrent: Null | Across | Object;
+	SeesDone: Neither | OnlyAcross | OnlyObject | Both;
+}
+
+StartOn Owing {
+	Seq: Name;
+	HasDone: False;
+	WantsDone: False;
+	SeesCurrent: Null;
+	SeesDone: Neither;
+}
+
+TransitionOn Owing {
+	current {
+		Seq: Name;
+	}
+	next {
+		Seq: Sees;
+	}
+}
+
+TransitionOn Owing {
+	current {
+		Seq: Name;
+		HasDone: False;
+	}
+	next {
+		Seq: Has;
+	}
+}
+
+TransitionOn Owing {
+	current {
+		Seq: Name;
+		WantsDone: False;
+	}
+	next {
+		Seq: Wants;
+	}
+}
+
+TransitionOn Owing {
+	current {
+		Seq: And;
+	}
+	next {
+		Seq: Sees;
+		SeesCurrent: Null;
+		SeesDone: Neither;
+	}
+}
+
+TransitionOn Owing {
+	current {
+		Seq: Sees;
+		SeesCurrent: Null;
+		SeesDone: Neither;
+	}
+	next {
+		SeesCurrent: Across;
+		SeesDone: OnlyAcross;
+	}
+}
+
+TransitionOn Owing {
+	current {
+		Seq: Sees;
+		SeesCurrent: Null;
+		SeesDone: Neither;
+	}
+	next {
+		SeesCurrent: Object;
+		SeesDone: OnlyObject;
+	}
+}
+
+TransitionOn Owing {
+	current {
+		Seq: Sees;
+		SeesCurrent: Across;
+		SeesDone: OnlyAcross;
+	}
+	next {
+		SeesCurrent: Object;
+		SeesDone: Both;
+	}
+}
+
+TransitionOn Owing {
+	current {
+		Seq: Sees;
+		SeesCurrent: Object;
+		SeesDone: OnlyObject;
+	}
+	next {
+		SeesCurrent: Across;
+		SeesDone: Both;
+	}
+}
+
+TransitionOn Owing {
+	current {
+		Seq: Sees;
+		SeesCurrent: Object;
+		SeesDone: OnlyObject;
+	}
+	next {
+		Seq: And;
+		SeesCurrent: Null;
+		SeesDone: Neither;
+	}
+}
+
+TransitionOn Owing {
+	current {
+		Seq: Sees;
+		SeesDone: Both;
+	}
+	next {
+		Seq: And;
+		SeesCurrent: Null;
+		SeesDone: Neither;
+	}
+}
+
+TransitionOn Owing {
+	current {
+		Seq: And;
+		HasDone: False;
+	}
+	next {
+		Seq: Has;
+	}
+}
+
+TransitionOn Owing {
+	current {
+		Seq: And;
+		WantsDone: False;
+	}
+	next {
+		Seq: Wants;
+	}
+}
+
+TransitionOn Owing {
+	current {
+		Seq: Has;
+	}
+	next {
+		Seq: And;
+		HasDone: True;
+	}
+}
+
+TransitionOn Owing {
+	current {
+		Seq: Wants;
+	}
+	next {
+		Seq: And;
+		WantsDone: True;
+	}
+}

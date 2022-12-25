@@ -13,35 +13,24 @@ DD_DEF_QUEUE(FENLLPoint, FENLLPoint);
 DD_DEF_ARRAY(FENLLPoint, FENLLPoint);
 
 typedef enum {
-	FE_NLL_GOAL_TYPE_NULL,
-	FE_NLL_GOAL_TYPE_FLEE,
-	FE_NLL_GOAL_TYPE_CHARGE,
-} FENLLGoalType;
-
-typedef struct FENLLander {
-	int id;
-	DDString name;
-	FENLLPoint loc;
-	struct {
-		double fuse_coin;
-		double frux_coin;
-	} pocket;
-	struct {
-		FENLLGoalType goal_type;
-		struct FENLLander *lander;
-		int invisible_ctr;
-	} goal;
-	int last_move;
-	int sight;
-	bool alive;
-} FENLLander;
-
-DD_DEF_ARRAY(FENLLander, FENLLander);
-
-typedef enum {
 	FE_NLL_COIN_FUSE,
 	FE_NLL_COIN_FRUX,
 } FENLLCoin;
+
+typedef struct {
+	double fuse_coin;
+	double frux_coin;
+} FENLLPocket;
+
+typedef enum {
+	FE_NLL_DIR_NORTH,
+	FE_NLL_DIR_EAST,
+	FE_NLL_DIR_SOUTH,
+	FE_NLL_DIR_WEST,
+	FE_NLL_DIR_NONE,
+} FENLLDirection;
+
+DD_DEF_ARRAY(FENLLDirection, FENLLDirection);
 
 typedef struct {
 	int debtor_id;
@@ -52,6 +41,80 @@ typedef struct {
 } FENLLRelation;
 
 DD_DEF_ARRAY(FENLLRelation, FENLLRelation);
+
+typedef enum {
+	FE_NLL_GOAL_TYPE_NULL,
+	FE_NLL_GOAL_TYPE_FLEE,
+	FE_NLL_GOAL_TYPE_CHARGE,
+} FENLLGoalType;
+
+typedef struct {
+	FENLLPocket in_pocket;
+	FENLLPocket outstanding;
+} FENLLTurnLogPocket;
+
+typedef struct {
+	int seen_id;
+	DDString seen_name;
+	FENLLPoint seen_loc;
+	DDArrFENLLRelation relations;
+	FENLLPocket outstanding;
+} FENLLTurnLogLanderSees;
+
+typedef struct {
+	int goal_id;
+	DDString goal_name;
+	FENLLPoint goal_loc;
+	FENLLGoalType goal_type;
+	DDArrFENLLRelation relations;
+} FENLLTurnLogLanderHasGoal;
+
+typedef struct {
+	FENLLPoint start_loc;
+	FENLLPoint end_loc;
+	DDArrFENLLDirection wanted_dirs;
+	FENLLDirection actual_dir;
+} FENLLTurnLogLanderMoves;
+
+typedef enum {
+	FE_NLL_TURN_LOG_ITEM_TYPE_POCKET,
+	FE_NLL_TURN_LOG_ITEM_TYPE_LANDER_SEES,
+	FE_NLL_TURN_LOG_ITEM_TYPE_LANDER_HAS_GOAL,
+	FE_NLL_TURN_LOG_ITEM_TYPE_LANDER_MOVES,
+} FENLLTurnLogItemType;
+
+typedef union {
+	FENLLTurnLogPocket p;
+	FENLLTurnLogLanderSees s;
+	FENLLTurnLogLanderHasGoal g;
+	FENLLTurnLogLanderMoves m;
+} FENLLTurnLogItemValue;
+
+typedef struct {
+	FENLLTurnLogItemType type;
+	FENLLTurnLogItemValue value;
+} FENLLTurnLogItem;
+
+DD_DEF_ARRAY(FENLLTurnLogItem, FENLLTurnLogItem);
+
+
+typedef struct FENLLander {
+	int id;
+	DDString name;
+	FENLLPoint loc;
+	FENLLPocket pocket;
+	struct {
+		FENLLGoalType goal_type;
+		struct FENLLander *lander;
+		int invisible_ctr;
+	} goal;
+	int last_move;
+	int sight;
+	bool alive;
+	DDArrFENLLTurnLogItem turn_log;
+} FENLLander;
+
+DD_DEF_ARRAY(FENLLander, FENLLander);
 
 typedef struct{
 	FENLLander *inhabitant;
@@ -103,11 +166,14 @@ typedef struct {
  * creditor can attack debtor
  * creditor can discharge debt by buying another debt
  *
- * remove possibility of duplicate start locations
+ * add alive / dead:
+ * 	- to lander sees
+ * 	- goal calculation
  */
 
 void fe_nll_print_map(FENLLWorld *world);
 void fe_nll_print_lander(FENLLander *lander);
+void print_turn_log(FENLLander *lander);
 void fe_nll_init_world(FENLLWorld *world, FENLLConfigureWorld *conf);
 void fe_nll_tick(FENLLWorld *world);
 void fe_nll_free_world(FENLLWorld *world);

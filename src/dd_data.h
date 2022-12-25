@@ -2,6 +2,7 @@
 #define dd_data_h
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 #define DD_ALLOCATE(type, count) \
     (type*)reallocate(NULL, 0, sizeof(type) * (count))
@@ -48,6 +49,14 @@
         (a)->elems[(a)->size] = k;                                                  \
         (a)->size++;                                                                \
     } while (0)
+
+#define DD_REMOVE_ARRAY(a, i)						\
+	do {											\
+		int j;										\
+		for (j = i; j < (a)->size - 1; j++)			\
+			(a)->elems[j] = (a)->elems[j+1];		\
+		(a)->size--;								\
+	} while (0)
 
 #define DD_FREE_ARRAY(a)                                                            \
     do {                                                                            \
@@ -110,6 +119,7 @@ DDString* dd_string_concat(DDString *a, DDString *b);
 void dd_string_concat_mutate(DDString *a, DDString *b);
 int get_next_dd_string_word_bounds(DDString *dd_str, int start,
 		int *word_start, int *word_end);
+bool dd_string_equal(DDString *a, DDString *b);
 void dd_copy_dd_string(DDString *target, DDString *dd_str);
 void dd_repeat_dd_string(DDString *target, DDString *to_repeat, int n);
 void free_string(DDString* dd_string);
