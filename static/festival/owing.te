@@ -17,29 +17,10 @@ StartOn Owing {
 TransitionOn Owing {
 	current {
 		Seq: Name;
-	}
-	next {
-		Seq: Sees;
-	}
-}
-
-TransitionOn Owing {
-	current {
-		Seq: Name;
 		HasDone: False;
 	}
 	next {
 		Seq: Has;
-	}
-}
-
-TransitionOn Owing {
-	current {
-		Seq: Name;
-		WantsDone: False;
-	}
-	next {
-		Seq: Wants;
 	}
 }
 

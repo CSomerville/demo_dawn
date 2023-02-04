@@ -849,17 +849,6 @@ static void lander_move(FENLLWorld *world, FENLLander *lander) {
  * *********************
  */
 
-/*static void lander_recoup_dumb_version(FENLLWorld *world,*/
-		/*FENLLander *lander) {*/
-	/*FENLLPocket pocket;*/
-
-	/*get_outstanding(&pocket, &world->relations, lander->id,*/
-			/*lander->goal.lander->id);*/
-
-
-
-/*}*/
-
 static void lander_recoup(FENLLWorld *world, FENLLander *lander) {
 	DDString tmp;
 	DDString target;

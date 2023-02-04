@@ -97,7 +97,6 @@ typedef struct {
 
 DD_DEF_ARRAY(FENLLTurnLogItem, FENLLTurnLogItem);
 
-
 typedef struct FENLLander {
 	int id;
 	DDString name;
