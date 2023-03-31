@@ -69,6 +69,9 @@ static int coin_comp(double amt) {
 static void print_coin(DDString *target, double amt) {
 	int written;
 	char tmp[10];
+	if (amt < 0.0) {
+		amt = -amt;
+	}
 	written = snprintf((char * restrict)&tmp, sizeof(char) * 10, "%.*f", 
 			3, amt);
 	give_to_dd_string(target, (const char*)&tmp, written);
@@ -77,21 +80,23 @@ static void print_coin(DDString *target, double amt) {
 static void narrate_name(FENLLNarrator *narrator) {
 	DDString name_str;
 	DDString add_str;
+	DDString descrip_str;
 	init_dd_string(&name_str);
 	init_dd_string(&add_str);
+	init_dd_string(&descrip_str);
+
+	pick_one_string(&descrip_str, 3,
+				"exhalation crackling past sunk-in-mucous windpipe",
+				"as roughly semantized as citified beech bark",
+				"their specialized by evolution ass skin itchy");
 
 	if (rand() % 2) {
-		pick_one_string(&name_str, 2,
-				"exhalation crackling past sunk-in-mucous windpipe ",
-				"as roughly semantized as citified beech bark ");
-
-		dd_string_concat_mutate(&name_str, &narrator->lander->name);
+		dd_copy_dd_string(&name_str, &descrip_str);
+		dd_copy_dd_string(&add_str, &narrator->lander->name);
+		easy_concat(&name_str, &add_str);
 	} else {
 		dd_copy_dd_string(&name_str, &narrator->lander->name);
-		pick_one_string(&add_str, 2,
-				"exhalation crackling past sunk-in-mucous windpipe ",
-				"as roughly semantized as citified beech bark ");
-		easy_concat(&name_str, &add_str);
+		easy_concat(&name_str, &descrip_str);
 	}
 
 	DD_ADD_ARRAY(narrator->result, name_str);
@@ -234,9 +239,10 @@ static FENLLTurnLogLanderSees *pick_turn_log_sees(
 static void narrate_sees_across(FENLLNarrator *narrator) {
 	DDString str;
 	init_dd_string(&str);
-	pick_one_string(&str, 2,
+	pick_one_string(&str, 3,
 			"across song-corrugated commercial spaces",
-			"beyond veiling vanilla crystalline smart monitors");
+			"beyond veilingly interwoven diode-clustering smart monitors",
+			"past interstate treelines, where ghost and cryptid stage their conflict");
 	
 	DD_ADD_ARRAY(narrator->result, str);
 }
@@ -363,14 +369,13 @@ static void narrate_sees_object(FENLLNarrator *narrator) {
 		pick_one_string(&add_str, 3,
 				"gland-wrought sweat shot gridwards",
 				"memories deligitimized by later market movements",
-				"naked, no clod but the coin to his name");
+				"naked, no clod but the coin to their name");
 		easy_concat(&sees_str, &add_str);
 
 		add_seen_liabilities(&add_str, sees);
 		dd_string_concat_mutate(&sees_str, &add_str);
 		free_dd_chars(&add_str);
 		init_dd_string(&add_str);
-
 
 		DD_ADD_ARRAY(narrator->result, sees_str);
 	}
@@ -418,6 +423,71 @@ static bool get_goal(FENLLTurnLogLanderHasGoal **g,
 	return false;
 }
 
+static void narrate_charge(FENLLTurnLogLanderHasGoal *g, 
+		DDString *wants_str) {
+	DDString tmp_str;
+	init_dd_string(&tmp_str);
+
+	pick_one_string(&tmp_str, 1,
+			"mirage-singed loved-by-crook photoreceptors a-tracking");
+	easy_concat(wants_str, &tmp_str);
+
+	pick_one_string(&tmp_str, 1,
+			"they hungrily envisage a collapse of options for");
+	easy_concat(wants_str, &tmp_str);
+
+	dd_copy_dd_string(&tmp_str, &g->goal_name);
+	easy_concat(wants_str, &tmp_str);
+}
+
+static void narrate_flee(FENLLTurnLogLanderHasGoal *g, 
+		DDString *wants_str) {
+	DDString tmp_str;
+	bool fuse_entered = false;
+
+	init_dd_string(&tmp_str);
+
+	pick_one_string(&tmp_str, 2,
+			"their thin shoes sharply dampened by snow",
+			"their weary-of-horror glands sputtering",
+			"theirs as quiveringly explosive as a mouse's heart");
+	easy_concat(wants_str, &tmp_str);
+
+	pick_one_string(&tmp_str, 2,
+			"they drive in desperate emission shocked flight from",
+			"they sprint fearfully between towered-high palettes from");
+	easy_concat(wants_str, &tmp_str);
+
+	dd_copy_dd_string(&tmp_str, &g->goal_name);
+	easy_concat(wants_str, &tmp_str);
+
+	give_to_dd_string(&tmp_str, "whom they owe", 13);
+	easy_concat(wants_str, &tmp_str);
+
+	if (g->outstanding.fuse_coin < -0.0004) {
+		fuse_entered = true;
+		print_coin(&tmp_str, g->outstanding.fuse_coin);
+		easy_concat(wants_str, &tmp_str);
+
+		give_to_dd_string(&tmp_str, "fuse", 4);
+		easy_concat(wants_str, &tmp_str);
+	}
+
+	if (g->outstanding.frux_coin < -0.0004) {
+		if (fuse_entered) {
+			give_to_dd_string(&tmp_str, "and", 3);
+			easy_concat(wants_str, &tmp_str);
+		}
+		print_coin(&tmp_str, g->outstanding.frux_coin);
+		easy_concat(wants_str, &tmp_str);
+
+		give_to_dd_string(&tmp_str, "frux", 4);
+		easy_concat(wants_str, &tmp_str);
+	}
+
+
+}
+
 static void narrate_wants(FENLLNarrator *narrator) {
 	DDString wants_str;
 	FENLLTurnLogLanderHasGoal *g;
@@ -429,9 +499,9 @@ static void narrate_wants(FENLLNarrator *narrator) {
 		if (g->goal_type == FE_NLL_GOAL_TYPE_NULL) {
 			give_to_dd_string(&wants_str, "null goal", 9);
 		} else if (g->goal_type == FE_NLL_GOAL_TYPE_FLEE) {
-			give_to_dd_string(&wants_str, "flee goal", 9);
+			narrate_flee(g, &wants_str);
 		} else if (g->goal_type == FE_NLL_GOAL_TYPE_CHARGE) {
-			give_to_dd_string(&wants_str, "charge goal", 11);
+			narrate_charge(g, &wants_str);
 		}
 	} else {
 		pick_one_string(&wants_str, 1,

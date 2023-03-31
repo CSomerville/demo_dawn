@@ -67,6 +67,7 @@ typedef struct {
 	FENLLPoint goal_loc;
 	FENLLGoalType goal_type;
 	DDArrFENLLRelation relations;
+	FENLLPocket outstanding;
 } FENLLTurnLogLanderHasGoal;
 
 typedef struct {
@@ -131,6 +132,7 @@ DD_DEF_ARRAY(FENLLogItem, FENLLogItem);
 typedef enum {
 	FE_NLL_MODE_WATCH,
 	FE_NLL_MODE_SILENT,
+	FE_NLL_MODE_PLAY,
 } FENLLMode;
 
 typedef struct {
@@ -142,6 +144,7 @@ typedef struct {
 	DDArrFENLLMapTile map;
 	DDArrFENLLogItem event_log;
 	FENLLMode mode;
+	int player_id;
 } FENLLWorld;
 
 typedef struct {

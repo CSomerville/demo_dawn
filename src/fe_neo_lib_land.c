@@ -137,7 +137,8 @@ static void init_turn_log_lander_has_goal(FENLLTurnLogLanderHasGoal *g) {
 
 static void create_turn_log_lander_has_goal(FENLLTurnLogLanderHasGoal *g,
 		int goal_id, DDString *goal_name, FENLLPoint *goal_loc,
-		FENLLGoalType goal_type, DDArrFENLLRelation *relations) {
+		FENLLGoalType goal_type, DDArrFENLLRelation *relations,
+		int lander_id) {
 	int i;
 	g->goal_id = goal_id;
 	dd_copy_dd_string(&g->goal_name, goal_name);
@@ -146,6 +147,7 @@ static void create_turn_log_lander_has_goal(FENLLTurnLogLanderHasGoal *g,
 	for (i = 0; i < relations->size; i++) {
 		DD_ADD_ARRAY(&g->relations, relations->elems[i]);
 	}
+	sum_relations(&g->outstanding, &g->relations, lander_id);
 }
 
 static void destroy_turn_log_lander_has_goal(
@@ -246,7 +248,7 @@ static void add_turn_log_lander_has_goal(FENLLander *goal_haver,
 			goal_obj->id);
 	create_turn_log_lander_has_goal(&item_val, goal_obj->id,
 			&goal_obj->name, &goal_obj->loc, goal_haver->goal.goal_type,
-			&relations);
+			&relations, goal_haver->id);
 
 	item.type = FE_NLL_TURN_LOG_ITEM_TYPE_LANDER_HAS_GOAL;
 	item.value.g = item_val;
@@ -446,12 +448,36 @@ void fe_nll_print_map(FENLLWorld *world) {
 			point.y = i;
 			tile = map_tile_at(world, point);
 			if (tile->inhabitant) {
-				printf("@");
+				if (tile->inhabitant->id == world->player_id) {
+					printf("@");
+				} else {
+					printf("*");
+				}
 			} else {
 				printf(".");
 			}
 		}
 		printf("\n");
+	}
+}
+
+static void stringify_dir(DDString *str, FENLLDirection dir) {
+	switch (dir) {
+		case FE_NLL_DIR_NORTH:
+			give_to_dd_string(str, "North", 5);
+			break;
+		case FE_NLL_DIR_EAST:
+			give_to_dd_string(str, "East", 4);
+			break;
+		case FE_NLL_DIR_SOUTH:
+			give_to_dd_string(str, "South", 5);
+			break;
+		case FE_NLL_DIR_WEST:
+			give_to_dd_string(str, "West", 4);
+			break;
+		case FE_NLL_DIR_NONE:
+			give_to_dd_string(str, "None", 4);
+			break;
 	}
 }
 
@@ -862,6 +888,75 @@ static void lander_recoup(FENLLWorld *world, FENLLander *lander) {
 	add_log_item(world, &target);
 }
 
+/***********************
+ * Player Turn *********
+ * *********************
+ */
+
+static FENLLDirection get_player_dir_selection(
+		DDArrFENLLDirection *available_dirs) {
+	int i, c, d;
+	DDString dir_str;
+
+	init_dd_string(&dir_str);
+	
+	printf("Select direction:\n");
+	for (i = 0; i < available_dirs->size; i++) {
+		stringify_dir(&dir_str, available_dirs->elems[i]);
+		printf("%d) %s\n", available_dirs->elems[i]+1, dir_str.chars);
+		free_dd_chars(&dir_str);
+		init_dd_string(&dir_str);
+	}
+
+	while (1) {
+		c = getchar();
+		d = c;
+		while (d != '\n') {
+			d = getchar();
+		}
+
+		for (i = 0; i < available_dirs->size; i++) {
+			if (c == available_dirs->elems[i]+49) {
+				return available_dirs->elems[i];
+			}
+		}
+	}
+}
+
+static void player_move(FENLLWorld *world, FENLLander *player) {
+	FENLLDirection chosen_dir;
+	FENLLPoint next_pt;
+	DDArrFENLLDirection available_dirs;
+	DD_INIT_ARRAY(&available_dirs);
+	
+	find_available_dirs(&available_dirs, world, player);
+
+	if (available_dirs.size == 0) {
+		printf("You are unable to move this turn.\n");
+		getchar();
+	}
+
+	chosen_dir = get_player_dir_selection(&available_dirs);
+	next_pt = shift_point_in_dir(player->loc, chosen_dir);
+	move_lander(world, next_pt, player);
+}
+
+static void player_take_turn(FENLLWorld *world, FENLLander *player) {
+	DDArrInt interesting_tile_indices;
+
+	DD_INIT_ARRAY(&interesting_tile_indices);
+
+	empty_turn_log(player);
+	add_turn_log_pocket(player, world);
+
+	lander_look_and_see(&interesting_tile_indices, world, player);
+
+	fe_nll_print_map(world);
+	print_turn_log(player);
+	player_move(world, player);
+
+	DD_FREE_ARRAY(&interesting_tile_indices);
+}
 
 /***********************
  * Tick ****************
@@ -918,12 +1013,23 @@ void fe_nll_init_world(FENLLWorld *world, FENLLConfigureWorld *conf) {
 	set_relations(world, conf);
 	set_map(world);
 	world->mode = conf->mode;
+
+	if (world->mode == FE_NLL_MODE_PLAY) {
+		world->player_id = world->populace.elems[0].id;
+	} else {
+		world->player_id = -1;
+	}
 }
 
 void fe_nll_tick(FENLLWorld *world) {
 	int i;
+
 	for (i = 0; i < world->populace.size; i++) {
-		lander_take_turn(world, &world->populace.elems[i]);
+		if (world->populace.elems[i].id == world->player_id) {
+			player_take_turn(world, &world->populace.elems[i]);
+		} else {
+			lander_take_turn(world, &world->populace.elems[i]);
+		}
 	}
 
 	if (world->mode == FE_NLL_MODE_WATCH) {

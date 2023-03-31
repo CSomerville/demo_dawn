@@ -68,7 +68,7 @@ int main(void) {
 	narrate_from_turn_log(&result, &world.populace.elems[1], 
 			&tendrils.elems[0]);
 	for (i = 0; i < result.size; i++) {
-		printf("%s\n", result.elems[i].chars);
+		printf("%s ", result.elems[i].chars);
 	}
 
 	fe_nll_free_world(&world);
