@@ -20,3 +20,14 @@ scratch-fe :
 scratch-fe-nll :
 	gcc src/fe_*c src/te_*c src/dd_*c src/scratch_fe_nll.c \
 		-g -Wall -Wextra -o bin/scratch_nll
+
+monstre-scratch :
+	bison -d -b fe_monstre src/fe_monstre.y
+	flex --header-file=fe_monstre.lex.h -o fe_monstre.lex.c \
+		src/fe_monstre.l
+	mv fe_monstre* src/
+	gcc src/fe_monstre.tab.c -ly -c
+	gcc src/fe_monstre.lex.c -lfl -c
+	gcc src/fe_monstre.tab.o src/fe_monstre.lex.o \
+		src/dd_data.c \
+		src/monstre_scratch.c -o bin/monstre_scratch
