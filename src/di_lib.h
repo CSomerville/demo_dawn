@@ -2,18 +2,19 @@
 #define di_lib
 
 #include "dd_data.h"
+#include "dd_twine.h"
 #include <ctype.h>
 #include <stdbool.h>
 
 typedef struct {
-	DDString pron;
+	DDTwine pron;
 	int stress;
 } DISyllable;
 
 DD_DEF_ARRAY(DISyllable, DISyllable);
 
 typedef struct {
-	DDString word;
+	DDTwine word;
 	int variant;
 	DDArrDISyllable pronunciation;
 } DIDictEntry;
@@ -28,12 +29,13 @@ DD_DEF_ARRAY(DIIndexedEntry, DIIndexedEntry);
 
 void init_di_syllable(DISyllable *di_syllable);
 void init_di_dict_entry(DIDictEntry *di_dict_entry);
-int entry_comp(DDString *word, const char *line);
-bool find_entry(DIDictEntry *match, DDString *word, const char *path);
-void di_dict_entry_to_str(DIDictEntry *entry, DDString *str);
-void entry_to_string(DIDictEntry *entry, DDString *str);
-int string_to_di_entry(DDString *str, DIDictEntry *entry);
-void di_entries_for_string(DDString *str, DDArrDIIndexedEntry *entries);
+int entry_comp(DDTwine *word, const char *line);
+bool find_entry(DIDictEntry *match, DDTwine *word, const char *path);
+void entry_to_string(DIDictEntry *entry, DDTwine *str);
+int string_to_di_entry(DDTwine *str, DIDictEntry *entry);
+void di_entries_for_string(DDTwine *str, DDArrDIIndexedEntry *entries,
+		const char *path);
+void di_add_entry(DIDictEntry *new_entry, const char *path);
 void free_di_dict_entry(DIDictEntry *di_dict_entry);
 
 #endif

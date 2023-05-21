@@ -1,0 +1,27 @@
+entities: you, "your workfriend", celeb, pres;
+
+relation_types: pmc_equal, adorer, loud_lord,
+	state_to_culture, subject;
+
+relations:
+	(pmc_equal, you, "your workfriend"),
+	(pmc_equal, "your workfriend", you),
+	(adorer, you, celeb),
+	(adorer, "your workfriend", celeb),
+	(loud_lord, celeb, you),
+	(loud_lord, celeb, "your workfriend"),
+	(state_to_culture, pres, celeb),
+	(subject, you, pres),
+	(subject, "your workfriend", pres);
+
+contents:
+	(pmc_equal, "shaking lil hands of", "shook lil hands with"),
+	(adorer, "aligning flappy appendages to image of",
+		"aligned em flappy appendages to the image of"),
+	(loud_lord, "declaring white consumer summer via song to",
+		"declared white consumer summer via song to"),
+	(state_to_culture, "teasing silo cavern stage gig of",
+		"teased Dakota silo cavern stage gig of"),
+	(subject, "directing timeslices towards likenesses of",
+		"directed cheap timeslices towards likenesses of");
+

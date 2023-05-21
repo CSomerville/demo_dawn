@@ -5,6 +5,7 @@
 #include "dd_data.h"
 #include "dd_graph.h"
 #include "dd_algo.h"
+#include "dd_twine.h"
 
 void dd_array(void) {
 	printf("testing dd_array... ");
@@ -232,6 +233,63 @@ void dd_cart_concat(void) {
 	printf("success.\n");
 }
 
+void dd_twine(void) {
+	printf("testing dd_twine... ");
+	DDTwine twa;
+	DDTwine twb;
+	DDTwine twc;
+
+	dd_twine_init(&twa);
+	dd_twine_init(&twb);
+	dd_twine_init(&twc);
+
+	dd_twine_from_chars_fixed(&twa, "blarg", 5);
+	assert(!strcmp(dd_twine_chars(&twa), "blarg"));
+	dd_twine_destroy(&twa);
+	dd_twine_init(&twa);
+
+	dd_twine_from_chars_dyn(&twa, "blarg");
+	assert(!strcmp(dd_twine_chars(&twa), "blarg"));
+	assert(dd_twine_char_at(&twa, 1) == 'l');
+	dd_twine_destroy(&twa);
+	dd_twine_init(&twa);
+
+	dd_twine_from_chars_fixed(&twa, "unk", 3);
+	dd_twine_from_chars_fixed(&twb, "unk", 3);
+	assert(dd_twine_len(&twa) == 3);
+	assert(dd_twine_eq(&twa, &twb));
+	dd_twine_destroy(&twb);
+	dd_twine_init(&twb);
+	dd_twine_from_chars_fixed(&twb, "blarg", 5);
+	assert(!dd_twine_eq(&twa, &twb));
+	dd_twine_destroy(&twa);
+	dd_twine_destroy(&twb);
+	dd_twine_init(&twa);
+	dd_twine_init(&twb);
+
+	dd_twine_from_chars_fixed(&twa, "blarg", 5);
+	dd_twine_from_chars_fixed(&twb, "stror", 5);
+	dd_twine_concat(&twc, &twa, &twb);
+	assert(!strcmp(dd_twine_chars(&twc), "blargstror"));
+	dd_twine_destroy(&twa);
+	dd_twine_destroy(&twb);
+	dd_twine_destroy(&twc);
+	dd_twine_init(&twa);
+	dd_twine_init(&twb);
+	dd_twine_init(&twc);
+
+	dd_twine_from_chars_fixed(&twa, "blarg", 5);
+	dd_twine_from_chars_fixed(&twb, "stror", 5);
+	dd_twine_concat_mut(&twa, &twb);
+	assert(!strcmp(dd_twine_chars(&twa), "blargstror"));
+	dd_twine_destroy(&twa);
+	dd_twine_destroy(&twb);
+	dd_twine_init(&twa);
+	dd_twine_init(&twb);
+
+	printf("success.\n");
+}
+
 int main(void) {
 	dd_array();
 	dd_queue();
@@ -239,4 +297,5 @@ int main(void) {
 	dd_word_bounds();
 	dd_graph();
 	dd_cart_concat();
+	dd_twine();
 }

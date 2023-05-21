@@ -50,6 +50,9 @@
         (a)->size++;                                                                \
     } while (0)
 
+#define DD_SELECT_ARRAY(a)							\
+	rand() % (a)->size
+
 #define DD_REMOVE_ARRAY(a, i)						\
 	do {											\
 		int j;										\

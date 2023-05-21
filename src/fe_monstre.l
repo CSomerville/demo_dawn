@@ -11,15 +11,35 @@
 
 #define YYSTYPE MONSTRESTYPE
 
-int monstreerror(char const *msg);
+int monstreerror(void *yylval, const void *s, char const *msg);
 %}
 
 %%
 
-[-+]?[[:digit:]]+ {
-	long n = strtol(yytext, NULL, 10);
-	*yylval = n;
-	return NUM;
+entities { return ENTITIES; }
+
+relation_types { return RELATION_TYPES; }
+
+relations { return RELATIONS; }
+
+contents { return CONTENT; }
+
+[[:alpha:]][[:alnum:]|_]* {
+	DDTwine *tmp_twine = DD_ALLOCATE(DDTwine, 1);
+	dd_twine_init(tmp_twine);
+	dd_twine_from_chars_dyn(tmp_twine, yytext);
+	*yylval = tmp_twine;
+	return TWI;
+}
+
+\"[^"]*\" {
+	int yytext_len;
+	DDTwine *tmp_twine = DD_ALLOCATE(DDTwine, 1);
+	dd_twine_init(tmp_twine);
+	yytext_len = strlen(yytext);
+	dd_twine_from_chars_fixed(tmp_twine, &yytext[1], yytext_len - 2);
+	*yylval = tmp_twine;
+	return TWI;
 }
 
 [[:space:]]	;

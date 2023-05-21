@@ -10,8 +10,11 @@ test-te :
 
 test-di :
 	gcc src/test_di.c src/di_*c src/dd_*c -g -Wall -Wextra -o bin/test_di
-	valgrind --leak-check=full --show-leak-kinds=all ./bin/test_di
+	./bin/test_di && valgrind --leak-check=full --show-leak-kinds=all ./bin/test_di
 	rm ./bin/test_di
+
+di-exec :
+	gcc src/exec_di.c src/di_*c src/dd_*c -g -Wall -Wextra -o bin/exec_di
 
 scratch-fe :
 	gcc src/fe_*c src/te_*c src/dd_*c src/scratch_fe.c \
@@ -28,6 +31,8 @@ monstre-scratch :
 	mv fe_monstre* src/
 	gcc src/fe_monstre.tab.c -ly -c
 	gcc src/fe_monstre.lex.c -lfl -c
-	gcc src/fe_monstre.tab.o src/fe_monstre.lex.o \
-		src/dd_data.c \
+	gcc src/dd_data.c \
+		src/dd_twine.c \
+		src/fe_monstre.tab.o src/fe_monstre.lex.o \
+		src/fe_monstre_lib.c \
 		src/monstre_scratch.c -o bin/monstre_scratch
