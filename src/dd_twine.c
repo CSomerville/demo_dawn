@@ -115,6 +115,16 @@ void dd_twine_word_bounds(DDArrDDTwineWB *wb_arr, DDTwine *twa) {
 	}
 }
 
+void dd_twine_join(DDTwine *tw, DDArrDDTwine *tw_arr, DDTwine *between) {
+	int i;
+	for (i = 0; i < tw_arr->size; i++) {
+		dd_twine_concat_mut(tw, &tw_arr->elems[i]);
+		if (i+1 < tw_arr->size) {
+			dd_twine_concat_mut(tw, between);
+		}
+	}
+}
+
 int dd_arr_dd_twine_index_of(DDArrDDTwine *tws, DDTwine *tw) {
 	int i;
 	for (i = 0; i < tws->size; i++) {

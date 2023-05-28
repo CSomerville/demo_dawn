@@ -33,6 +33,8 @@ monstre-scratch :
 	gcc src/fe_monstre.lex.c -lfl -c
 	gcc src/dd_data.c \
 		src/dd_twine.c \
+		src/di_lib.c \
+		src/li_lineate.c \
 		src/fe_monstre.tab.o src/fe_monstre.lex.o \
 		src/fe_monstre_lib.c \
 		src/monstre_scratch.c -o bin/monstre_scratch

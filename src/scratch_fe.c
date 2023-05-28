@@ -25,6 +25,7 @@ int main(void) {
 	init_te_scanner(&scanner, source);
 	DD_INIT_ARRAY(&tendrils);
 	DD_INIT_ARRAY(&result);
+	DD_INIT_ARRAY(&dict_entries);
 
 	parse_tendrils(&scanner, &tendrils);
 
