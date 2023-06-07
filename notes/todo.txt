@@ -1,0 +1,11 @@
+1) pdf hello world
+2) finish fe_neo_lib_land game (combat)
+3) create nll_narrator data format
+4) cast therm.te output to DDTwine
+5) add more lineation options
+6) fix dict find entries to only read file once
+
+I) <requires 3> rewrite nll_narrator to be good and use DDTwine
+II) <requires 1> create pdf output
+
+a) <requires 4, I> start outputting (therm, nll, monst) together
