@@ -57,14 +57,9 @@ int main(void) {
 
 	fe_monstre_parse(&dat, f);
 	fe_monstre_pick_initial_entity(&state, &dat);
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < 20; i++) {
 		fe_monstre_tick(&state, &dat);
 	}
-
-	for (i = 0; i < state.collect.size; i++) {
-		printf("%s ", dd_twine_chars(&state.collect.elems[i]));
-	}
-	printf("\n");
 
 	lineate_and_print(&state.collect);
 

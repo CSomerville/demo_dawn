@@ -1,0 +1,7 @@
+{
+	key1: bare_val;
+	key2: "quoted val";
+	key3: (bare_val, "quoted val", (nested), { nested_key: any_val; });
+// comment
+	key4: { nested_key_2: bare_val; nested_key_3: (blarg); };
+}

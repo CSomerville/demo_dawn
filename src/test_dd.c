@@ -85,6 +85,27 @@ void dd_queue(void) {
 	printf("success.\n");
 }
 
+void dd_stack(void) {
+	printf("testing dd_stack... ");
+	DD_DEF_STACK(int, Int);
+
+	int i, x;
+	DDStackInt dd_stack_int;
+
+	DD_INIT_STACK(&dd_stack_int);
+	for (i = 0; i < 10; i++) {
+		DD_PUSH_STACK(Int, &dd_stack_int, i);
+	}
+	assert(!DD_STACK_EMPTY(&dd_stack_int));
+	assert(DD_PEEK_STACK(&dd_stack_int) == 9);
+	for (i = 0; i < 10; i++) {
+		DD_POP_STACK(Int, &dd_stack_int, x);
+		assert(x == 9 - i);
+	}
+	assert(DD_STACK_EMPTY(&dd_stack_int));
+	printf("success.\n");
+}
+
 /* TODO: test dd_string_equal */
 void dd_string(void) {
 	printf("testing dd_string... ");
@@ -293,6 +314,7 @@ void dd_twine(void) {
 int main(void) {
 	dd_array();
 	dd_queue();
+	dd_stack();
 	dd_string();
 	dd_word_bounds();
 	dd_graph();

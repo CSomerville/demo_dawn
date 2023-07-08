@@ -4,6 +4,7 @@
 4) cast therm.te output to DDTwine
 5) add more lineation options
 6) fix dict find entries to only read file once
+7) clean up makefile: it's a mess.
 
 I) <requires 3> rewrite nll_narrator to be good and use DDTwine
 II) <requires 1> create pdf output

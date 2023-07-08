@@ -1,7 +1,7 @@
 entities: you, "your workfriend", celeb, pres;
 
 relation_types: pmc_equal, adorer, loud_lord,
-	state_to_culture, subject, placeholder;
+	state_to_culture, subject, finance;
 
 relations:
 	(pmc_equal, you, "your workfriend"),
@@ -13,24 +13,31 @@ relations:
 	(state_to_culture, pres, celeb),
 	(subject, you, pres),
 	(subject, "your workfriend", pres),
-	(placeholder, pres, you);
+	(finance, pres, you),
+	(finance, celeb, you),
+	(finance, pres, "your workfriend"),
+	(finance, celeb, "your workfriend");
 
 contents:
 	(pmc_equal, "shaking lil hands of", "shook lil hands with"),
 	(pmc_equal, "chucklingly memojiing", "chucklingly memojied"),
-	(adorer, "lining up flappy appendages with image of",
+	(adorer, "aligning flappy appendages with image of",
 		"lined up em flappy appendages to the image of"),
+	(adorer, "consulting texture map of columned pres residence where will stay",
+		"consulted texture map of columned pres residence where will stay"),
 	(loud_lord, "declaring white consumer summer via song to",
 		"declared white consumer summer via song to"),
-	(loud_lord, "icon claddedly assigning an imbalanced role to",
+	(loud_lord, "icon claddedly tune-enhancing time-walls around",
 		"icon claddedly drew paths before"),
 	(loud_lord,
-		"evangelizing tips on gut bacteria as happiness tool for",
+		"evangelizing gut bacteria as happiness determinant for",
 		"evangelized tips on gut bacteria as happiness tool for"),
 	(state_to_culture, "teasing silo cavern stage gig of",
 		"teased Dakota silo cavern stage gig of"),
-	(subject, "self-shearing own timeslices towards likenesses of",
+	(subject, "self-shearing timeslices to dress likenesses of",
 		"in tribute furnished crude timeslices to likenesses of"),
-	(placeholder, "pumping fusecoin stratospherically high to",
-		"pumped the fusecoin stratospherically high to");
+	(finance, "pumping that fusecoin stratospherically to",
+		"pumped the fusecoin stratospherically high to"),
+	(finance, "hyping that sweet-as-teen-saliva fruxcoin to",
+		"hyped that sweet-as-teen-saliva fruxcoin to");
 

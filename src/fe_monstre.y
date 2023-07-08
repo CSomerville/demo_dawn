@@ -21,7 +21,6 @@ content:
 %code top {
 	#include <stdio.h>
 	#include "dd_data.h"
-	/*#include <stdlib.h>*/
 	#include "dd_twine.h"
 
 	#ifndef YYNOMEM

@@ -77,11 +77,63 @@ typedef struct {
 	FENLLDirection actual_dir;
 } FENLLTurnLogLanderMoves;
 
+typedef struct {
+	int creditor_id;
+	int debtor_id;
+	FENLLPoint creditor_loc;
+	FENLLPoint debtor_loc;
+	DDString creditor_name;
+	DDString debtor_name;
+} FENLLTurnLogAttemptsRecoup;
+
+typedef struct {
+	int creditor_id;
+	int debtor_id;
+	DDString creditor_name;
+	DDString debtor_name;
+	double amt;
+	FENLLCoin coin_type;
+} FENLLTurnLogFullRepayment;
+
+typedef struct {
+	int new_creditor_id;
+	int old_creditor_id;
+	int debtor_id;
+	DDString new_creditor_name;
+	DDString old_creditor_name;
+	DDString debtor_name;
+	double amt;
+	FENLLCoin coin_type;
+} FENLLTurnLogSellsDebt;
+
+typedef struct {
+	int creditor_id;
+	int debtor_id;
+	DDString creditor_name;
+	DDString debtor_name;
+	double total;
+	double monthly;
+	FENLLCoin coin_type;
+} FENLLTurnLogSetsUpPlan;
+
+/* additional turn log item types:
+ * attempts recoupment;
+ * full payment;
+ * sells debt;
+ * sets up payment plan;
+ * makes payment;
+ * misses payment;
+ */
+
 typedef enum {
 	FE_NLL_TURN_LOG_ITEM_TYPE_POCKET,
 	FE_NLL_TURN_LOG_ITEM_TYPE_LANDER_SEES,
 	FE_NLL_TURN_LOG_ITEM_TYPE_LANDER_HAS_GOAL,
 	FE_NLL_TURN_LOG_ITEM_TYPE_LANDER_MOVES,
+	FE_NLL_TURN_LOG_ITEM_TYPE_ATTEMPTS_RECOUP,
+	FE_NLL_TURN_LOG_ITEM_TYPE_FULL_REPAYMENT,
+	FE_NLL_TURN_LOG_ITEM_TYPE_SELLS_DEBT,
+	FE_NLL_TURN_LOG_ITEM_TYPE_SETS_UP_PLAN,
 } FENLLTurnLogItemType;
 
 typedef union {
@@ -89,6 +141,10 @@ typedef union {
 	FENLLTurnLogLanderSees s;
 	FENLLTurnLogLanderHasGoal g;
 	FENLLTurnLogLanderMoves m;
+	FENLLTurnLogAttemptsRecoup r;
+	FENLLTurnLogFullRepayment f;
+	FENLLTurnLogSellsDebt d;
+	FENLLTurnLogSetsUpPlan u;
 } FENLLTurnLogItemValue;
 
 typedef struct {
@@ -97,6 +153,23 @@ typedef struct {
 } FENLLTurnLogItem;
 
 DD_DEF_ARRAY(FENLLTurnLogItem, FENLLTurnLogItem);
+
+typedef struct FENLLGoalCooldown {
+	int id;
+	int turns_left;
+} FENLLCooldown;
+
+DD_DEF_ARRAY(FENLLCooldown, FENLLCooldown);
+
+typedef struct FENLLPaymentPlan {
+	int creditor_id;
+	double total;
+	double monthly;
+	double interest;
+	FENLLCoin coin_type;
+} FENLLPaymentPlan;
+
+DD_DEF_ARRAY(FENLLPaymentPlan, FENLLPaymentPlan);
 
 typedef struct FENLLander {
 	int id;
@@ -112,6 +185,8 @@ typedef struct FENLLander {
 	int sight;
 	bool alive;
 	DDArrFENLLTurnLogItem turn_log;
+	DDArrFENLLCooldown cooldowns;
+	DDArrFENLLPaymentPlan payment_plans;
 } FENLLander;
 
 DD_DEF_ARRAY(FENLLander, FENLLander);
@@ -163,16 +238,12 @@ typedef struct {
 
 /* encounter:
  * creditor can accept full payment
- * creditor can accept partial payment
- * creditor can discharge the debt at discount
- * creditor can attack debtor
  * creditor can discharge debt by buying another debt
+ * creditor can impose payment plan
  *
- * add alive / dead:
- * 	- to lander sees
- * 	- goal calculation
  */
 
+void debug_print_relations(FENLLWorld *world);
 void fe_nll_print_map(FENLLWorld *world);
 void fe_nll_print_lander(FENLLander *lander);
 void print_turn_log(FENLLander *lander);

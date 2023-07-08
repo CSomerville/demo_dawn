@@ -50,7 +50,7 @@ int main(void) {
 
 	conf.height = 25;
 	conf.width = 25;
-	conf.num_population = 20;
+	conf.num_population = 5;
 	conf.names = names;
 	conf.pocket_floor = 20.0;
 	conf.pocket_ceil = 100.0;
@@ -58,11 +58,12 @@ int main(void) {
 	conf.amt_ceil = 75.0;
 	conf.interest_floor = 0.01;
 	conf.interest_ceil = 0.05;
-	conf.mode = FE_NLL_MODE_SILENT;
+	conf.mode = FE_NLL_MODE_WATCH;
 
 	fe_nll_init_world(&world, &conf);
-	for (i = 0; i < 20; i++) {
+	for (i = 0; i < 200; i++) {
 		fe_nll_tick(&world);
+		debug_print_relations(&world);
 	}
 
 	narrate_from_turn_log(&result, &world.populace.elems[1], 

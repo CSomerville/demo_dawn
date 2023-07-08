@@ -109,6 +109,41 @@
 		free(qn);							\
 	} while (0)
 
+#define DD_DEF_STACK(T, name)				\
+	typedef struct DDStackNode##name { 		\
+		T val;								\
+		struct DDStackNode##name *next;		\
+	} DDStackNode##name; 					\
+	typedef struct {						\
+		DDStackNode##name *top;				\
+	} DDStack##name;	
+
+#define DD_INIT_STACK(s)					\
+	(s)->top = NULL
+
+#define DD_PUSH_STACK(name, s, v)			\
+	do {									\
+		DDStackNode##name *sn;				\
+		sn = malloc(sizeof(*((s)->top)));	\
+		sn->val = (v);						\
+		sn->next = (s)->top;				\
+		(s)->top = sn;						\
+	} while (0)
+
+#define DD_POP_STACK(name, s, v)					\
+	do {											\
+		v = (s)->top->val;							\
+		DDStackNode##name *sn = (s)->top;			\
+		(s)->top = sn->next;						\
+		free(sn);									\
+	} while (0)
+
+#define DD_PEEK_STACK(s)					\
+	((s)->top->val)
+
+#define DD_STACK_EMPTY(s)					\
+	((s)->top == NULL)
+
 typedef struct {
     int length;
     char* chars;
