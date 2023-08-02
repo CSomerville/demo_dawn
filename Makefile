@@ -21,6 +21,67 @@ scratch-fe :
 	gcc src/fe_*c src/te_*c src/dd_*c src/scratch_fe.c \
 		-g -Wall -Wextra -o bin/scratch_fe
 
+bin/te_scanner.o : src/te_scanner.c src/te_scanner.h bin/dd_data.o
+	gcc src/te_scanner.c -g -Wall -Wextra -c -o bin/te_scanner.o
+
+bin/te_tendril.o : src/te_tendril.c src/te_tendril.h bin/te_scanner.o \
+				bin/dd_data.o bin/dd_graph.o
+	gcc src/te_scanner.c \
+		-g -Wall -Wextra -c -o bin/te_tendril.o
+
+dd_utils : src/dd_utils.c src/dd_utils.h
+	gcc src/dd_utils.c \
+		-g -Wall -Wextra -c -o bin/dd_utils.o
+
+dd_data : src/dd_data.c src/dd_data.h
+	gcc src/dd_data.c \
+		-g -Wall -Wextra -c -o bin/dd_data.o
+
+dd_algo : src/dd_algo.c src/dd_algo.h dd_data
+	gcc src/dd_algo.c \
+		-g -Wall -Wextra -c -o bin/dd_algo.o
+
+dd_graph : src/dd_graph.c src/dd_graph.h dd_data
+	gcc src/dd_graph.c \
+		-g -Wall -Wextra -c -o bin/dd_graph.o
+
+dd_twine : src/dd_twine.c src/dd_twine.h dd_data
+	gcc src/dd_twine.c \
+		-g -Wall -Wextra -c -o bin/dd_twine.o
+
+dd_twine_ball : src/dd_twine_ball.y src/dd_twine_ball.l dd_data \
+				dd_twine src/dd_twine_ball_lib.c				\
+				src/dd_twine_ball_lib.h
+	bison -d -b dd_twine_ball --header=src/dd_twine_ball.tab.h \
+		-o src/dd_twine_ball.tab.c src/dd_twine_ball.y
+	flex --header-file=src/dd_twine_ball.lex.h -o \
+		src/dd_twine_ball.lex.c src/dd_twine_ball.l
+	gcc src/dd_twine_ball.tab.c \
+		-g -Wall -Wextra -c -o bin/dd_twine_ball.tab.o
+	gcc src/dd_twine_ball.lex.c \
+		-g -Wall -Wextra -c -o bin/dd_twine_ball.lex.o
+	gcc src/dd_twine_ball_lib.c \
+		-g -Wall -Wextra -c -o bin/dd_twine_ball_lib.o
+
+fe_neo_lib_land : src/fe_neo_lib_land.c src/fe_neo_lib_land.h \
+					dd_data dd_utils
+	gcc src/fe_neo_lib_land.c \
+		-g -Wall -Wextra -c -o bin/fe_neo_lib_land.o
+
+fe_nll_narrator_2 : src/fe_nll_narrator.c src/fe_nll_narrator.h \
+					dd_data dd_twine dd_twine_ball
+	gcc src/fe_nll_narrator_2.c \
+		-g -Wall -Wextra -c -o bin/fe_nll_narrator_2.o
+
+scratch_fe_nll_2 : src/scratch_fe_nll_2.c fe_neo_lib_land \
+					dd_twine fe_nll_narrator_2
+	gcc bin/dd_data.o bin/dd_utils.o bin/fe_neo_lib_land.o \
+		bin/fe_nll_narrator_2.o src/scratch_fe_nll_2.c	\
+		bin/dd_twine.o									\
+		bin/dd_twine_ball.tab.o bin/dd_twine_ball.lex.o \
+		bin/dd_twine_ball_lib.o							\
+		-g -Wall -Wextra -o bin/scratch_fe_nll_2
+
 scratch-fe-nll :
 	gcc src/fe_neo_lib_land.c src/fe_nll_narrator.c \
 		src/te_*c src/dd_*c src/scratch_fe_nll.c \

@@ -13,16 +13,13 @@
 %define api.prefix {twine_ball}
 %define parse.error verbose
 %code top {
-	#include <stdio.h>
-	#include "dd_data.h"
-	#include "dd_twine.h"
-
 	#ifndef YYNOMEM
 	#define YYNOMEM goto yyexhaustedlab
 	#endif
 }
 
 %code requires {
+	#include <stdio.h>
 	#include "dd_data.h"
 	#include "dd_twine.h"
 
@@ -73,9 +70,8 @@
 %code provides {
 	void dd_twine_ball_free(DDTwineBallItem *item);
 	void print_twine_ball(DDTwineBallItem *item);
-	bool dd_twine_ball_obj_get(DDTwineBallItem *item, DDTwineBallObj *o,
+	bool dd_twine_ball_obj_get(DDTwineBallItem **item, DDTwineBallObj *o,
 		DDTwine *key);
-	void dd_twine_ball_parse(DDTwineBallData data, FILE *f);
 }
 
 %code {
@@ -215,35 +211,22 @@ void print_twine_ball(DDTwineBallItem *item) {
 				printf(",\n");
 			}
 			printf("}\n");
+			break;
 		case DD_TWINE_BALL_TWINE:
 			printf("%s", item->value.t->chars);
+			break;
 	}
 }
 
-bool dd_twine_ball_obj_get(DDTwineBallItem *item, DDTwineBallObj *o,
+bool dd_twine_ball_obj_get(DDTwineBallItem **item, DDTwineBallObj *o,
 		DDTwine *key) {
 	int i;
 	for (i = 0; i < o->keys.size; i++) {
 		if (dd_twine_eq(&o->keys.elems[i], key)) {
-			item = &o->items.elems[i];
+			*item = &o->items.elems[i];
 			return true;
 		}
 	}
 	return false;
 }
 
-void dd_twine_ball_parse(DDTwineBallData data, FILE *f) {
-	int i;
-	FILE *f;
-	yyscan_t scanner;
-
-	if ((i = twine_balllex_init(&scanner)) != 0) {
-		exit(i);
-	}
-
-	twine_ballset_in(f, scanner);
-	int e = twine_ballparse(&data, scanner);
-	if (e != 0)
-		exit(e);
-	twine_balllex_destroy(scanner);
-}

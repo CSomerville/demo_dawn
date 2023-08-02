@@ -61,6 +61,19 @@
 		(a)->size--;								\
 	} while (0)
 
+#define DD_SHUFFLE_ARRAY(T, a)						\
+	do {											\
+		T tmp_elem;									\
+		int i, j;									\
+		for (i = (a)->size -1; i > 0; i--) {		\
+			j = rand() % i;							\
+			tmp_elem = (a)->elems[j];				\
+			(a)->elems[j] = (a)->elems[i];			\
+			(a)->elems[i] = tmp_elem;				\
+		}											\
+	} while (0)
+
+
 #define DD_FREE_ARRAY(a)                                                            \
     do {                                                                            \
         reallocate((a)->elems, sizeof(*((a)->elems)) * (a)->capacity, 0);           \

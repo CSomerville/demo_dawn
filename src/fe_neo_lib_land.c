@@ -8,6 +8,16 @@
  * *********************
  */
 
+static void lander_by_id(FENLLander **lander, FENLLWorld *world, int id) {
+	int i;
+	for (i = 0; i < world->populace.size; i++) {
+		if (id == world->populace.elems[i].id) {
+			*lander = &world->populace.elems[i];
+			break;
+		}
+	}
+}
+
 // world->populace must be set.
 static void set_relations(FENLLWorld *world, FENLLConfigureWorld *conf) {
 	int i, j;
@@ -48,10 +58,11 @@ static void get_joint_relations(DDArrFENLLRelation *found,
 		DDArrFENLLRelation *relations, int id_a, int id_b) {
 	int i;
 	for (i = 0; i < relations->size; i++) {
-		if ((relations->elems[i].debtor_id == id_a &&
+		if (((relations->elems[i].debtor_id == id_a &&
 				relations->elems[i].creditor_id == id_b) ||
 				(relations->elems[i].debtor_id == id_b &&
-				relations->elems[i].creditor_id == id_a))
+				relations->elems[i].creditor_id == id_a)) &&
+				relations->elems[i].amt != 0.0)
 			DD_ADD_ARRAY(found, relations->elems[i]);
 	}
 }
@@ -182,63 +193,6 @@ static void add_cooldown(DDArrFENLLCooldown *cooldowns, int turns,
 	DD_ADD_ARRAY(cooldowns, cooldown);
 }
 
-
-/***********************
- * Payment Plan ********
- * *********************
- */
-
-static void create_payment_plan(FENLLander *lander, int creditor_id,
-		double total, FENLLCoin coin_type) {
-	FENLLPaymentPlan payment_plan;
-	payment_plan.creditor_id = creditor_id;
-	payment_plan.total = total;
-	payment_plan.monthly = total / ((rand() % 24) + 24);
-	payment_plan.interest = rand_double() * 0.4 + 0.11;
-	payment_plan.coin_type = coin_type;
-	DD_ADD_ARRAY(&lander->payment_plans, payment_plan);
-}
-
-static bool can_pay(FENLLander *lander, FENLLPaymentPlan *plan) {
-	if (plan->coin_type == FE_NLL_COIN_FUSE) {
-		return lander->pocket.fuse_coin >= plan->monthly;
-	}
-	return lander->pocket.frux_coin >= plan->monthly;
-}
-
-static void pay_plan(FENLLander *lander, FENLLPaymentPlan *plan) {
-	if (plan->coin_type == FE_NLL_COIN_FUSE) {
-		lander->pocket.fuse_coin -= plan->monthly;
-	} else {
-		lander->pocket.frux_coin -= plan->monthly;
-	}
-	plan->total -= plan->monthly;
-}
-
-static void handle_missed_payment(FENLLWorld *world, FENLLander *lander,
-		FENLLPaymentPlan *plan) {
-	add_new_relation(world, lander->id, plan->creditor_id,
-			plan->monthly, plan->interest, plan->coin_type);
-}
-
-static void handle_payment_plan(FENLLWorld *world, FENLLander *lander,
-		FENLLPaymentPlan *plan) {
-	if (can_pay(lander, plan)) {
-		pay_plan(lander, plan);
-	} else {
-		handle_missed_payment(world, lander, plan);
-	}
-}
-
-static void handle_payment_plans(FENLLWorld *world, FENLLander *lander) {
-	int i;
-	for (i = 0; i < lander->payment_plans.size; i++) {
-		if (lander->payment_plans.elems[i].total > 0.0) {
-			handle_payment_plan(world, lander,
-					&lander->payment_plans.elems[i]);
-		}
-	}
-}
 
 /***********************
  * Turn Log ************
@@ -417,6 +371,48 @@ static void destroy_turn_log_sets_up_plan(FENLLTurnLogSetsUpPlan *u) {
 	free_dd_chars(&u->debtor_name);
 }
 
+static void init_turn_log_misses_payment(FENLLTurnLogMissesPayment *i) {
+	init_dd_string(&i->creditor_name);
+	init_dd_string(&i->debtor_name);
+}
+
+static void create_turn_log_misses_payment(FENLLTurnLogMissesPayment *i,
+		int creditor_id, int debtor_id, DDString *creditor_name,
+		DDString *debtor_name, double amt, FENLLCoin coin_type) {
+	i->creditor_id = creditor_id;
+	i->debtor_id = debtor_id;
+	dd_copy_dd_string(&i->creditor_name, creditor_name);
+	dd_copy_dd_string(&i->debtor_name, debtor_name);
+	i->amt = amt;
+	i->coin_type = coin_type;
+}
+
+static void destroy_turn_log_misses_payment(FENLLTurnLogMissesPayment *i) {
+	free_dd_chars(&i->creditor_name);
+	free_dd_chars(&i->debtor_name);
+}
+
+static void init_turn_log_makes_payment(FENLLTurnLogMakesPayment *a) {
+	init_dd_string(&a->creditor_name);
+	init_dd_string(&a->debtor_name);
+}
+
+static void create_turn_log_makes_payment(FENLLTurnLogMakesPayment *a,
+		int creditor_id, int debtor_id, DDString *creditor_name,
+		DDString *debtor_name, double amt, FENLLCoin coin_type) {
+	a->creditor_id = creditor_id;
+	a->debtor_id = debtor_id;
+	dd_copy_dd_string(&a->creditor_name, creditor_name);
+	dd_copy_dd_string(&a->debtor_name, debtor_name);
+	a->amt = amt;
+	a->coin_type = coin_type;
+}
+
+static void destroy_turn_log_makes_payment(FENLLTurnLogMakesPayment *a) {
+	free_dd_chars(&a->creditor_name);
+	free_dd_chars(&a->debtor_name);
+}
+
 static void empty_turn_log(FENLLander *lander) {
 	int i;
 	for (i = 0; i < lander->turn_log.size; i++) {
@@ -450,9 +446,18 @@ static void empty_turn_log(FENLLander *lander) {
 			case FE_NLL_TURN_LOG_ITEM_TYPE_SETS_UP_PLAN:
 				destroy_turn_log_sets_up_plan(
 						&lander->turn_log.elems[i].value.u);
+				break;
+			case FE_NLL_TURN_LOG_ITEM_TYPE_MISSES_PAYMENT:
+				destroy_turn_log_misses_payment(
+						&lander->turn_log.elems[i].value.i);
+				break;
+			case FE_NLL_TURN_LOG_ITEM_TYPE_MAKES_PAYMENT:
+				destroy_turn_log_makes_payment(
+						&lander->turn_log.elems[i].value.a);
+				break;
 		}
 	}
-	DD_FREE_ARRAY(&lander->turn_log);
+	lander->turn_log.size = 0;
 }
 
 static void add_turn_log_pocket(FENLLander *lander, FENLLWorld *world) {
@@ -470,6 +475,7 @@ static void add_turn_log_pocket(FENLLander *lander, FENLLWorld *world) {
 	item.value.p = item_val;
 
 	DD_ADD_ARRAY(&lander->turn_log, item);
+	DD_FREE_ARRAY(&lander_relations);
 }
 
 static void add_turn_log_lander_sees(FENLLander *seer,
@@ -490,6 +496,7 @@ static void add_turn_log_lander_sees(FENLLander *seer,
 	item.value.s = item_val;
 
 	DD_ADD_ARRAY(&seer->turn_log, item);
+	DD_FREE_ARRAY(&relations);
 }
 
 static void add_turn_log_lander_has_goal(FENLLander *goal_haver,
@@ -510,6 +517,7 @@ static void add_turn_log_lander_has_goal(FENLLander *goal_haver,
 	item.value.g = item_val;
 
 	DD_ADD_ARRAY(&goal_haver->turn_log, item);
+	DD_FREE_ARRAY(&relations);
 }
 
 static void add_turn_log_has_goal(FENLLander *lander, FENLLWorld *world) {
@@ -538,6 +546,8 @@ static void add_turn_log_lander_moves(FENLLander *lander, FENLLPoint last,
 static void add_turn_log_attempts_recoup(FENLLander *lander) {
 	FENLLTurnLogAttemptsRecoup item_val;
 	FENLLTurnLogItem item;
+	FENLLTurnLogAttemptsRecoup item_val_2;
+	FENLLTurnLogItem item_2;
 
 	init_turn_log_attempts_recoup(&item_val);
 	create_turn_log_attempts_recoup(&item_val, lander->id,
@@ -547,14 +557,24 @@ static void add_turn_log_attempts_recoup(FENLLander *lander) {
 	item.type = FE_NLL_TURN_LOG_ITEM_TYPE_ATTEMPTS_RECOUP;
 	item.value.r = item_val;
 
+	init_turn_log_attempts_recoup(&item_val_2);
+	create_turn_log_attempts_recoup(&item_val_2, lander->id,
+			lander->goal.lander->id, lander->loc,
+			lander->goal.lander->loc, &lander->name,
+			&lander->goal.lander->name);
+	item_2.type = FE_NLL_TURN_LOG_ITEM_TYPE_ATTEMPTS_RECOUP;
+	item_2.value.r = item_val_2;
+
 	DD_ADD_ARRAY(&lander->goal.lander->turn_log, item);
-	DD_ADD_ARRAY(&lander->turn_log, item);
+	DD_ADD_ARRAY(&lander->turn_log, item_2);
 }
 
 static void add_turn_log_full_repayment(FENLLander *lander, double amt,
 		FENLLCoin coin_type) {
 	FENLLTurnLogFullRepayment item_val;
 	FENLLTurnLogItem item;
+	FENLLTurnLogFullRepayment item_val_2;
+	FENLLTurnLogItem item_2;
 
 	init_turn_log_full_repayment(&item_val);
 	create_turn_log_full_repayment(&item_val, lander->id,
@@ -563,14 +583,23 @@ static void add_turn_log_full_repayment(FENLLander *lander, double amt,
 	item.type = FE_NLL_TURN_LOG_ITEM_TYPE_FULL_REPAYMENT;
 	item.value.f = item_val;
 
+	init_turn_log_full_repayment(&item_val_2);
+	create_turn_log_full_repayment(&item_val_2, lander->id,
+			lander->goal.lander->id, amt, coin_type,
+			&lander->name, &lander->goal.lander->name);
+	item_2.type = FE_NLL_TURN_LOG_ITEM_TYPE_FULL_REPAYMENT;
+	item_2.value.f = item_val_2;
+
 	DD_ADD_ARRAY(&lander->turn_log, item);
-	DD_ADD_ARRAY(&lander->goal.lander->turn_log, item);
+	DD_ADD_ARRAY(&lander->goal.lander->turn_log, item_2);
 }
 
 static void add_turn_log_sells_debt(FENLLander *lander,
 		FENLLander *debtor, FENLLRelation *rel) {
 	FENLLTurnLogSellsDebt item_val;
 	FENLLTurnLogItem item;
+	FENLLTurnLogSellsDebt item_val_2;
+	FENLLTurnLogItem item_2;
 
 	init_turn_log_sells_debt(&item_val);
 	create_turn_log_sells_debt(&item_val, lander->id,
@@ -580,27 +609,88 @@ static void add_turn_log_sells_debt(FENLLander *lander,
 	item.type = FE_NLL_TURN_LOG_ITEM_TYPE_SELLS_DEBT;
 	item.value.d = item_val;
 
+	init_turn_log_sells_debt(&item_val_2);
+	create_turn_log_sells_debt(&item_val_2, lander->id,
+			lander->goal.lander->id, debtor->id, &lander->name,
+			&lander->goal.lander->name, &debtor->name, rel->amt,
+			rel->coin);
+	item_2.type = FE_NLL_TURN_LOG_ITEM_TYPE_SELLS_DEBT;
+	item_2.value.d = item_val_2;
 	DD_ADD_ARRAY(&lander->turn_log, item);
-	DD_ADD_ARRAY(&lander->goal.lander->turn_log, item);
+	DD_ADD_ARRAY(&debtor->turn_log, item_2);
 }
 
-static void add_turn_log_sets_up_plan(FENLLander *lander,
-		FENLLPaymentPlan plan) {
+static void add_turn_log_sets_up_plan(FENLLander *creditor,
+		FENLLander *debtor, FENLLPaymentPlan plan) {
 	FENLLTurnLogSetsUpPlan item_val;
 	FENLLTurnLogItem item;
+	FENLLTurnLogSetsUpPlan item_val_2;
+	FENLLTurnLogItem item_2;
 
 	init_turn_log_sets_up_plan(&item_val);
-	create_turn_log_sets_up_plan(&item_val, lander->id,
-			lander->goal.lander->id, &lander->name,
-			&lander->goal.lander->name, plan.total, plan.monthly,
-			plan.coin_type);
+	create_turn_log_sets_up_plan(&item_val, creditor->id,
+			debtor->id, &creditor->name, &debtor->name,
+			plan.total, plan.monthly, plan.coin_type);
 	item.type = FE_NLL_TURN_LOG_ITEM_TYPE_SETS_UP_PLAN;
 	item.value.u = item_val;
 
-	DD_ADD_ARRAY(&lander->turn_log, item);
-	DD_ADD_ARRAY(&lander->goal.lander->turn_log, item);
+	init_turn_log_sets_up_plan(&item_val_2);
+	create_turn_log_sets_up_plan(&item_val_2, creditor->id,
+			debtor->id, &creditor->name, &debtor->name,
+			plan.total, plan.monthly, plan.coin_type);
+	item_2.type = FE_NLL_TURN_LOG_ITEM_TYPE_SETS_UP_PLAN;
+	item_2.value.u = item_val_2;
+
+	DD_ADD_ARRAY(&creditor->turn_log, item);
+	DD_ADD_ARRAY(&debtor->turn_log, item_2);
 }
 
+static void add_turn_log_misses_payment(FENLLander *creditor,
+		FENLLander *debtor, FENLLPaymentPlan *plan) {
+	FENLLTurnLogMissesPayment item_val;
+	FENLLTurnLogItem item;
+	FENLLTurnLogMissesPayment item_val_2;
+	FENLLTurnLogItem item_2;
+
+	init_turn_log_misses_payment(&item_val);
+	create_turn_log_misses_payment(&item_val, creditor->id, debtor->id, 
+			&creditor->name, &debtor->name, plan->monthly,
+			plan->coin_type);
+	item.type = FE_NLL_TURN_LOG_ITEM_TYPE_MISSES_PAYMENT;
+	item.value.i = item_val;
+
+	init_turn_log_misses_payment(&item_val_2);
+	create_turn_log_misses_payment(&item_val_2, creditor->id, debtor->id, 
+			&creditor->name, &debtor->name, plan->monthly,
+			plan->coin_type);
+	item_2.type = FE_NLL_TURN_LOG_ITEM_TYPE_MISSES_PAYMENT;
+	item_2.value.i = item_val_2;
+	DD_ADD_ARRAY(&creditor->turn_log, item);
+	DD_ADD_ARRAY(&debtor->turn_log, item_2);
+}
+
+static void add_turn_log_makes_payment(FENLLander *creditor,
+		FENLLander *debtor, FENLLPaymentPlan *plan) {
+	FENLLTurnLogMakesPayment item_val;
+	FENLLTurnLogItem item;
+	FENLLTurnLogMakesPayment item_val_2;
+	FENLLTurnLogItem item_2;
+
+	init_turn_log_makes_payment(&item_val);
+	create_turn_log_makes_payment(&item_val, creditor->id, debtor->id, 
+			&creditor->name, &debtor->name, plan->monthly,
+			plan->coin_type);
+	item.type = FE_NLL_TURN_LOG_ITEM_TYPE_MAKES_PAYMENT;
+	item.value.a = item_val;
+	init_turn_log_makes_payment(&item_val_2);
+	create_turn_log_makes_payment(&item_val_2, creditor->id, debtor->id, 
+			&creditor->name, &debtor->name, plan->monthly,
+			plan->coin_type);
+	item_2.type = FE_NLL_TURN_LOG_ITEM_TYPE_MAKES_PAYMENT;
+	item_2.value.a = item_val_2;
+	DD_ADD_ARRAY(&creditor->turn_log, item);
+	DD_ADD_ARRAY(&debtor->turn_log, item_2);
+}
 
 static void print_pocket(FENLLTurnLogPocket *p) {
 	printf("pocket at start:\n");
@@ -705,6 +795,31 @@ static void print_sets_up_plan(FENLLTurnLogSetsUpPlan *u) {
 	}
 }
 
+static void print_misses_payment(FENLLTurnLogMissesPayment *i) {
+	printf("%s (id: %d)", i->debtor_name.chars, i->debtor_id);
+	printf(" misses a payment of %f ", i->amt);
+	if (i->coin_type == FE_NLL_COIN_FUSE) {
+		printf("fuse");
+	} else {
+		printf("frux");
+	}
+	printf(" owed to %s (id: %d)\n", i->creditor_name.chars,
+			i->creditor_id);
+	
+}
+
+static void print_makes_payment(FENLLTurnLogMakesPayment *a) {
+	printf("%s (id: %d)", a->debtor_name.chars, a->debtor_id);
+	printf(" misses a payment of %f ", a->amt);
+	if (a->coin_type == FE_NLL_COIN_FUSE) {
+		printf("fuse");
+	} else {
+		printf("frux");
+	}
+	printf(" owed to %s (id: %d)\n", a->creditor_name.chars,
+			a->creditor_id);
+}
+
 void print_turn_log(FENLLander *lander) {
 	int i;
 	for (i = 0; i < lander->turn_log.size; i++) {
@@ -735,10 +850,82 @@ void print_turn_log(FENLLander *lander) {
 			case FE_NLL_TURN_LOG_ITEM_TYPE_SETS_UP_PLAN:
 				print_sets_up_plan(&lander->turn_log.elems[i].value.u);
 				break;
+			case FE_NLL_TURN_LOG_ITEM_TYPE_MISSES_PAYMENT:
+				print_misses_payment(&lander->turn_log.elems[i].value.i);
+				break;
+			case FE_NLL_TURN_LOG_ITEM_TYPE_MAKES_PAYMENT:
+				print_makes_payment(&lander->turn_log.elems[i].value.a);
+				break;
 		}
 	}
 }
 
+/***********************
+ * Payment Plan ********
+ * *********************
+ */
+
+static void create_payment_plan(FENLLWorld *world, FENLLander *lander,
+		int creditor_id, double total, FENLLCoin coin_type) {
+	FENLLander *creditor;
+	FENLLPaymentPlan payment_plan;
+	payment_plan.creditor_id = creditor_id;
+	payment_plan.total = total;
+	payment_plan.monthly = total / ((rand() % 24) + 24);
+	payment_plan.interest = rand_double() * 0.4 + 0.11;
+	payment_plan.coin_type = coin_type;
+	DD_ADD_ARRAY(&lander->payment_plans, payment_plan);
+	lander_by_id(&creditor, world, creditor_id);
+	add_turn_log_sets_up_plan(creditor, lander, payment_plan);
+}
+
+static bool can_pay(FENLLander *lander, FENLLPaymentPlan *plan) {
+	if (plan->coin_type == FE_NLL_COIN_FUSE) {
+		return lander->pocket.fuse_coin >= plan->monthly;
+	}
+	return lander->pocket.frux_coin >= plan->monthly;
+}
+
+static void pay_plan(FENLLWorld *world, FENLLander *lander,
+		FENLLPaymentPlan *plan) {
+	FENLLander *creditor;
+	lander_by_id(&creditor, world, plan->creditor_id);
+	add_turn_log_makes_payment(creditor, lander, plan);
+	if (plan->coin_type == FE_NLL_COIN_FUSE) {
+		lander->pocket.fuse_coin -= plan->monthly;
+	} else {
+		lander->pocket.frux_coin -= plan->monthly;
+	}
+	plan->total -= plan->monthly;
+}
+
+static void handle_missed_payment(FENLLWorld *world, FENLLander *lander,
+		FENLLPaymentPlan *plan) {
+	FENLLander *creditor;
+	lander_by_id(&creditor, world, plan->creditor_id);
+	add_turn_log_misses_payment(creditor, lander, plan);
+	add_new_relation(world, lander->id, plan->creditor_id,
+			plan->monthly, plan->interest, plan->coin_type);
+}
+
+static void handle_payment_plan(FENLLWorld *world, FENLLander *lander,
+		FENLLPaymentPlan *plan) {
+	if (can_pay(lander, plan)) {
+		pay_plan(world, lander, plan);
+	} else {
+		handle_missed_payment(world, lander, plan);
+	}
+}
+
+static void handle_payment_plans(FENLLWorld *world, FENLLander *lander) {
+	int i;
+	for (i = 0; i < lander->payment_plans.size; i++) {
+		if (lander->payment_plans.elems[i].total > 0.0) {
+			handle_payment_plan(world, lander,
+					&lander->payment_plans.elems[i]);
+		}
+	}
+}
 
 /***********************
  * Map Utils ***********
@@ -968,6 +1155,7 @@ static void create_lander(FENLLander *lander, int id, DDString *name,
 	get_lander_start_pocket(lander, conf);
 	lander->goal.goal_type = FE_NLL_GOAL_TYPE_NULL;
 	lander->goal.lander = NULL;
+	lander->goal.invisible_ctr = 0;
 	lander->last_move = -1;
 	lander->sight = 5;
 	lander->alive = true;
@@ -978,6 +1166,10 @@ static void create_lander(FENLLander *lander, int id, DDString *name,
 
 static void free_lander(FENLLander *lander) {
 	free_dd_chars(&lander->name);
+	empty_turn_log(lander);
+	DD_FREE_ARRAY(&lander->turn_log);
+	DD_FREE_ARRAY(&lander->cooldowns);
+	DD_FREE_ARRAY(&lander->payment_plans);
 }
 
 /***********************
@@ -1090,13 +1282,14 @@ static void evaluate_one_tile(int tile_index, FENLLWorld *world,
 						&lander->goal.lander->loc);
 				dist_b = get_manhattan_distance(&lander->loc,
 						&tile->inhabitant->loc);
-				if (dist_a / dist_b >= 2) {
+				if (dist_a / dist_b >= 1.5) {
 					set_goal(&relations, lander, tile->inhabitant);
 					log_new_goal(world, lander);
 				}
 			}
 		}
 	}
+	DD_FREE_ARRAY(&relations);
 }
 
 static void lander_pick_goal(DDArrInt *tile_indices, FENLLWorld *world,
@@ -1111,6 +1304,11 @@ static void lander_pick_goal(DDArrInt *tile_indices, FENLLWorld *world,
 		evaluate_one_tile(tile_indices->elems[i], world, lander);
 	}
 	add_turn_log_has_goal(lander, world);
+}
+
+static void remove_goal(FENLLander *lander) {
+	lander->goal.goal_type = FE_NLL_GOAL_TYPE_NULL;
+	lander->goal.lander = NULL;
 }
 
 /***********************
@@ -1204,6 +1402,8 @@ static bool attempt_full_payment(FENLLWorld *world, FENLLander *lander) {
 				FE_NLL_COIN_FUSE, lander->goal.lander->id, lander->id);
 		log_full_payment(world, FE_NLL_COIN_FUSE, outstanding.fuse_coin,
 				lander->goal.lander, lander);
+		add_turn_log_full_repayment(lander, outstanding.fuse_coin,
+				FE_NLL_COIN_FUSE);
 		return true;
 	} else if (outstanding.frux_coin > 0.0 &&
 			outstanding.frux_coin < lander->goal.lander->pocket.frux_coin) {
@@ -1211,6 +1411,8 @@ static bool attempt_full_payment(FENLLWorld *world, FENLLander *lander) {
 				FE_NLL_COIN_FRUX, lander->goal.lander->id, lander->id);
 		log_full_payment(world, FE_NLL_COIN_FRUX, outstanding.frux_coin,
 				lander->goal.lander, lander);
+		add_turn_log_full_repayment(lander, outstanding.frux_coin,
+				FE_NLL_COIN_FRUX);
 		return true;
 	}
 	return false;
@@ -1241,6 +1443,10 @@ static bool attempt_buy_debt(FENLLWorld *world, FENLLander *lander) {
 		log_debt_purchase(world, 
 				&world->relations.elems[rel_indices.elems[0]],
 				FE_NLL_COIN_FUSE);
+		add_turn_log_sells_debt(lander, lander->goal.lander,
+			&world->relations.elems[rel_indices.elems[0]]);
+
+		DD_FREE_ARRAY(&rel_indices);
 		return true;
 	} else if (outstanding.frux_coin > 0.0) {
 		make_payment(&world->relations,
@@ -1252,8 +1458,12 @@ static bool attempt_buy_debt(FENLLWorld *world, FENLLander *lander) {
 		log_debt_purchase(world, 
 				&world->relations.elems[rel_indices.elems[0]],
 				FE_NLL_COIN_FRUX);
+		add_turn_log_sells_debt(lander, lander->goal.lander,
+			&world->relations.elems[rel_indices.elems[0]]);
+		DD_FREE_ARRAY(&rel_indices);
 		return true;
 	}
+	DD_FREE_ARRAY(&rel_indices);
 	return false;
 }
 
@@ -1263,20 +1473,21 @@ static void setup_payment_plan(FENLLWorld *world, FENLLander *lander) {
 	get_outstanding(&outstanding, world, lander->id,
 			lander->goal.lander->id);
 	if (outstanding.fuse_coin > 0.0) {
-		create_payment_plan(lander->goal.lander, lander->id,
+		create_payment_plan(world, lander->goal.lander, lander->id,
 				outstanding.fuse_coin, FE_NLL_COIN_FUSE);
 		make_payment(&world->relations, outstanding.fuse_coin,
 				FE_NLL_COIN_FUSE, lander->goal.lander->id, lander->id);
 	} else if (outstanding.frux_coin > 0.0) {
-		create_payment_plan(lander->goal.lander, lander->id,
+		create_payment_plan(world, lander->goal.lander, lander->id,
 				outstanding.frux_coin, FE_NLL_COIN_FRUX);
 		make_payment(&world->relations, outstanding.frux_coin,
 				FE_NLL_COIN_FRUX, lander->goal.lander->id, lander->id);
-	}
+	} 
 }
 
 static void lander_recoup(FENLLWorld *world, FENLLander *lander) {
 	bool pay;
+	add_turn_log_attempts_recoup(lander);
 	pay = attempt_full_payment(world, lander);
 	if (!pay) {
 		pay = attempt_buy_debt(world, lander);
@@ -1285,8 +1496,7 @@ static void lander_recoup(FENLLWorld *world, FENLLander *lander) {
 		}
 	}
 	add_cooldown(&lander->cooldowns, 3, lander->goal.lander->id);
-	lander->goal.goal_type = FE_NLL_GOAL_TYPE_NULL;
-	lander->goal.lander = NULL;
+	remove_goal(lander);
 }
 
 /***********************
@@ -1306,17 +1516,28 @@ static void move_lander(FENLLWorld *world, FENLLPoint point,
 
 static void find_available_dirs(DDArrFENLLDirection *available,
 		FENLLWorld *world, FENLLander *lander) {
-	/*FENLLMapTile *tile;*/
+	FENLLMapTile *tile;
 	FENLLPoint point;
 	int i;
 
 	for (i = FE_NLL_DIR_NORTH; i <= FE_NLL_DIR_WEST; i++) {
 		point = shift_point_in_dir(lander->loc, i);
 		if (point_on_map(world, point)) {
-			/*tile = map_tile_at(world, point);*/
-			/*if (tile->inhabitant == NULL)*/
+			tile = map_tile_at(world, point);
+			if (!tile->inhabitant)
 				DD_ADD_ARRAY(available, i);
 		}
+	}
+}
+
+static void rand_pick_two(DDArrFENLLDirection *dir_arr,
+		FENLLDirection dir_1, FENLLDirection dir_2) {
+	if ((rand() % 2) == 0) {
+		DD_ADD_ARRAY(dir_arr, dir_1);
+		DD_ADD_ARRAY(dir_arr, dir_2);
+	} else {
+		DD_ADD_ARRAY(dir_arr, dir_2);
+		DD_ADD_ARRAY(dir_arr, dir_1);
 	}
 }
 
@@ -1332,48 +1553,36 @@ static void set_priority_of_dirs(DDArrFENLLDirection *priority_dirs,
 	if (goal_point.x == lander->loc.x) {
 		if (goal_point.y > lander->loc.y) {
 			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_SOUTH);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_WEST);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_EAST);
+			rand_pick_two(priority_dirs, FE_NLL_DIR_EAST, FE_NLL_DIR_WEST);
 			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_NORTH);
 		} else {
 			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_NORTH);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_EAST);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_WEST);
+			rand_pick_two(priority_dirs, FE_NLL_DIR_EAST, FE_NLL_DIR_WEST);
 			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_SOUTH);
 		}
 	} else if (goal_point.x > lander->loc.x) {
 		if (goal_point.y == lander->loc.y) {
 			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_EAST);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_SOUTH);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_NORTH);
+			rand_pick_two(priority_dirs, FE_NLL_DIR_SOUTH, FE_NLL_DIR_NORTH);
 			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_WEST);
 		} else if (goal_point.y > lander->loc.y) {
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_SOUTH);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_EAST);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_NORTH);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_WEST);
+			rand_pick_two(priority_dirs, FE_NLL_DIR_SOUTH, FE_NLL_DIR_EAST);
+			rand_pick_two(priority_dirs, FE_NLL_DIR_NORTH, FE_NLL_DIR_WEST);
 		} else {
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_EAST);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_NORTH);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_WEST);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_SOUTH);
+			rand_pick_two(priority_dirs, FE_NLL_DIR_NORTH, FE_NLL_DIR_EAST);
+			rand_pick_two(priority_dirs, FE_NLL_DIR_WEST, FE_NLL_DIR_SOUTH);
 		}
 	} else {
 		if (goal_point.y == lander->loc.y) {
 			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_WEST);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_NORTH);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_SOUTH);
+			rand_pick_two(priority_dirs, FE_NLL_DIR_SOUTH, FE_NLL_DIR_NORTH);
 			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_EAST);
 		} else if (goal_point.y > lander->loc.y) {
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_WEST);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_SOUTH);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_NORTH);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_EAST);
+			rand_pick_two(priority_dirs, FE_NLL_DIR_SOUTH, FE_NLL_DIR_WEST);
+			rand_pick_two(priority_dirs, FE_NLL_DIR_NORTH, FE_NLL_DIR_EAST);
 		} else {
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_NORTH);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_WEST);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_SOUTH);
-			DD_ADD_ARRAY(priority_dirs, FE_NLL_DIR_EAST);
+			rand_pick_two(priority_dirs, FE_NLL_DIR_NORTH, FE_NLL_DIR_WEST);
+			rand_pick_two(priority_dirs, FE_NLL_DIR_SOUTH, FE_NLL_DIR_EAST);
 		}
 	}
 }
@@ -1395,7 +1604,7 @@ static FENLLDirection pick_from_wanted(DDArrFENLLDirection *wanted_dirs,
 			return wanted_dirs->elems[i];
 		}
 	}
-	return FE_NLL_DIR_NONE;
+	return available_dirs->elems[rand() % available_dirs->size];
 }
 
 static void lander_move(FENLLWorld *world, FENLLander *lander) {
@@ -1404,7 +1613,6 @@ static void lander_move(FENLLWorld *world, FENLLander *lander) {
 	FENLLPoint last_pt;
 	FENLLDirection chosen_dir;
 	FENLLPoint next_pt;
-	FENLLMapTile *tile;
 
 	DD_INIT_ARRAY(&available_dirs);
 	DD_INIT_ARRAY(&wanted_dirs);
@@ -1422,12 +1630,9 @@ static void lander_move(FENLLWorld *world, FENLLander *lander) {
 	}
 	
 	next_pt = shift_point_in_dir(lander->loc, chosen_dir);
-	tile = map_tile_at(world, next_pt);
-	if (tile->inhabitant == NULL) {
-		move_lander(world, next_pt, lander);
-		add_turn_log_lander_moves(lander, last_pt, next_pt, &wanted_dirs,
-			chosen_dir);
-	}
+	move_lander(world, next_pt, lander);
+	add_turn_log_lander_moves(lander, last_pt, next_pt, &wanted_dirs,
+		chosen_dir);
 
 	DD_FREE_ARRAY(&available_dirs);
 	DD_FREE_ARRAY(&wanted_dirs);
@@ -1492,7 +1697,6 @@ static void player_take_turn(FENLLWorld *world, FENLLander *player) {
 
 	DD_INIT_ARRAY(&interesting_tile_indices);
 
-	empty_turn_log(player);
 	add_turn_log_pocket(player, world);
 
 	lander_look_and_see(&interesting_tile_indices, world, player);
@@ -1519,12 +1723,12 @@ static void lander_take_turn(FENLLWorld *world, FENLLander *lander) {
 	DDArrInt interesting_tile_indices;
 	DD_INIT_ARRAY(&interesting_tile_indices);
 
-	empty_turn_log(lander);
 
 	add_turn_log_pocket(lander, world);
 	handle_payment_plans(world, lander);
 
 	lander_look_and_see(&interesting_tile_indices, world, lander);
+	DD_SHUFFLE_ARRAY(int, &interesting_tile_indices);
 	lander_pick_goal(&interesting_tile_indices, world, lander);
 
 	if (can_try_collection(lander)) {
@@ -1534,6 +1738,7 @@ static void lander_take_turn(FENLLWorld *world, FENLLander *lander) {
 	}
 
 	reduce_cooldowns(&lander->cooldowns);
+	DD_FREE_ARRAY(&interesting_tile_indices);
 }
 
 void fe_nll_init_world(FENLLWorld *world, FENLLConfigureWorld *conf) { 
@@ -1571,13 +1776,22 @@ void fe_nll_init_world(FENLLWorld *world, FENLLConfigureWorld *conf) {
 }
 
 void fe_nll_tick(FENLLWorld *world) {
-	int i;
+	int i, j, k;
 
 	for (i = 0; i < world->populace.size; i++) {
+		empty_turn_log(&world->populace.elems[i]);
+	}
+
+	for (i = 0; i < world->populace.size; i++) {
+		j = rand() % 3 + 1;
 		if (world->populace.elems[i].id == world->player_id) {
-			player_take_turn(world, &world->populace.elems[i]);
+			for (k = 0; k < j; k++) {
+				player_take_turn(world, &world->populace.elems[i]);
+			}
 		} else {
-			lander_take_turn(world, &world->populace.elems[i]);
+			for (k = 0; k < j; k++) {
+				lander_take_turn(world, &world->populace.elems[i]);
+			}
 		}
 	}
 
@@ -1600,4 +1814,5 @@ void fe_nll_free_world(FENLLWorld *world) {
 	for (i = 0; i < world->event_log.size; i++)
 		free_log_item(&world->event_log.elems[i]);
 	DD_FREE_ARRAY(&world->event_log);
+	DD_FREE_ARRAY(&world->map);
 }

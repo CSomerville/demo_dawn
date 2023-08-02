@@ -20,6 +20,7 @@ DD_DEF_ARRAY(DDTwineWB, DDTwineWB);
 void dd_twine_init(DDTwine *tw);
 void dd_twine_from_chars_fixed(DDTwine *tw, const char *chars, int len);
 void dd_twine_from_chars_dyn(DDTwine *tw, const char *chars);
+void dd_twine_from_dd_str(DDTwine *tw, DDString *str);
 
 unsigned int dd_twine_len(DDTwine *tw);
 char *dd_twine_chars(DDTwine *tw);

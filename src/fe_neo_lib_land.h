@@ -116,6 +116,24 @@ typedef struct {
 	FENLLCoin coin_type;
 } FENLLTurnLogSetsUpPlan;
 
+typedef struct {
+	int creditor_id;
+	int debtor_id;
+	DDString creditor_name;
+	DDString debtor_name;
+	double amt;
+	FENLLCoin coin_type;
+} FENLLTurnLogMissesPayment;
+
+typedef struct {
+	int creditor_id;
+	int debtor_id;
+	DDString creditor_name;
+	DDString debtor_name;
+	double amt;
+	FENLLCoin coin_type;
+} FENLLTurnLogMakesPayment;
+
 /* additional turn log item types:
  * attempts recoupment;
  * full payment;
@@ -134,6 +152,8 @@ typedef enum {
 	FE_NLL_TURN_LOG_ITEM_TYPE_FULL_REPAYMENT,
 	FE_NLL_TURN_LOG_ITEM_TYPE_SELLS_DEBT,
 	FE_NLL_TURN_LOG_ITEM_TYPE_SETS_UP_PLAN,
+	FE_NLL_TURN_LOG_ITEM_TYPE_MISSES_PAYMENT,
+	FE_NLL_TURN_LOG_ITEM_TYPE_MAKES_PAYMENT,
 } FENLLTurnLogItemType;
 
 typedef union {
@@ -145,11 +165,14 @@ typedef union {
 	FENLLTurnLogFullRepayment f;
 	FENLLTurnLogSellsDebt d;
 	FENLLTurnLogSetsUpPlan u;
+	FENLLTurnLogMissesPayment i;
+	FENLLTurnLogMakesPayment a;
 } FENLLTurnLogItemValue;
 
 typedef struct {
 	FENLLTurnLogItemType type;
 	FENLLTurnLogItemValue value;
+	int turn;
 } FENLLTurnLogItem;
 
 DD_DEF_ARRAY(FENLLTurnLogItem, FENLLTurnLogItem);

@@ -23,6 +23,10 @@ void dd_twine_from_chars_dyn(DDTwine *tw, const char *chars) {
 	dd_twine_from_chars_fixed(tw, chars, i);
 }
 
+void dd_twine_from_dd_str(DDTwine *tw, DDString *str) {
+	dd_twine_from_chars_fixed(tw, str->chars, str->length);
+}
+
 unsigned int dd_twine_len(DDTwine *tw) {
 	return tw->length;
 }
