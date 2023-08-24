@@ -359,7 +359,7 @@ ContentOn Therm {
 		ProgPart: Driving;
 	}
 	content {
-		"cold, stiff car ceases, dessicates";
+		"cold, stiff car ceases, desiccates";
 	}
 }
 

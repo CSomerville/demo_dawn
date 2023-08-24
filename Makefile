@@ -1,3 +1,6 @@
+LINK_BISON="-L/usr/local/opt/bison/lib"
+BISON_PATH="/usr/local/opt/bison/bin/bison"
+
 test-dd :
 	gcc src/test_dd.c src/dd_data.c src/dd_graph.c \
 	   src/dd_algo.c src/dd_twine.c -g -Wall -Wextra -o bin/test_dd
@@ -14,19 +17,20 @@ test-di :
 	./bin/test_di && valgrind --leak-check=full --show-leak-kinds=all ./bin/test_di
 	rm ./bin/test_di
 
-di-exec :
-	gcc src/exec_di.c src/di_*c src/dd_*c -g -Wall -Wextra -o bin/exec_di
+di-exec : src/exec_di.c di_lib
+	gcc bin/di_lib.o bin/dd_data.o bin/dd_twine.o \
+		src/exec_di.c -g -Wall -Wextra -o bin/exec_di
 
 scratch-fe :
 	gcc src/fe_*c src/te_*c src/dd_*c src/scratch_fe.c \
 		-g -Wall -Wextra -o bin/scratch_fe
 
-bin/te_scanner.o : src/te_scanner.c src/te_scanner.h bin/dd_data.o
+te_scanner : src/te_scanner.c src/te_scanner.h bin/dd_data.o
 	gcc src/te_scanner.c -g -Wall -Wextra -c -o bin/te_scanner.o
 
-bin/te_tendril.o : src/te_tendril.c src/te_tendril.h bin/te_scanner.o \
-				bin/dd_data.o bin/dd_graph.o
-	gcc src/te_scanner.c \
+te_tendril : src/te_tendril.c src/te_tendril.h te_scanner \
+				dd_data dd_algo dd_graph
+	gcc src/te_tendril.c \
 		-g -Wall -Wextra -c -o bin/te_tendril.o
 
 dd_utils : src/dd_utils.c src/dd_utils.h
@@ -52,7 +56,7 @@ dd_twine : src/dd_twine.c src/dd_twine.h dd_data
 dd_twine_ball : src/dd_twine_ball.y src/dd_twine_ball.l dd_data \
 				dd_twine src/dd_twine_ball_lib.c				\
 				src/dd_twine_ball_lib.h
-	bison -d -b dd_twine_ball --header=src/dd_twine_ball.tab.h \
+	$(BISON_PATH) -d -b dd_twine_ball --header=src/dd_twine_ball.tab.h \
 		-o src/dd_twine_ball.tab.c src/dd_twine_ball.y
 	flex --header-file=src/dd_twine_ball.lex.h -o \
 		src/dd_twine_ball.lex.c src/dd_twine_ball.l
@@ -62,6 +66,10 @@ dd_twine_ball : src/dd_twine_ball.y src/dd_twine_ball.l dd_data \
 		-g -Wall -Wextra -c -o bin/dd_twine_ball.lex.o
 	gcc src/dd_twine_ball_lib.c \
 		-g -Wall -Wextra -c -o bin/dd_twine_ball_lib.o
+
+di_lib : src/di_lib.h src/di_lib.c dd_data dd_twine
+	gcc src/di_lib.c \
+		-g -Wall -Wextra -c -o bin/di_lib.o
 
 fe_neo_lib_land : src/fe_neo_lib_land.c src/fe_neo_lib_land.h \
 					dd_data dd_utils
@@ -81,6 +89,22 @@ scratch_fe_nll_2 : src/scratch_fe_nll_2.c fe_neo_lib_land \
 		bin/dd_twine_ball.tab.o bin/dd_twine_ball.lex.o \
 		bin/dd_twine_ball_lib.o							\
 		-g -Wall -Wextra -o bin/scratch_fe_nll_2
+
+li_lineate : src/li_lineate.c src/li_lineate.h dd_data \
+					dd_twine di_lib
+	gcc src/li_lineate.c \
+		-g -Wall -Wextra -c -o bin/li_lineate.o
+
+fe_lib : src/fe_lib.h src/fe_lib.c dd_data dd_twine te_tendril \
+			dd_utils di_lib li_lineate 
+	gcc src/fe_lib.c \
+		-g -Wall -Wextra -c -o bin/fe_lib.o
+
+fe : src/fe.c fe_lib
+	gcc bin/te_scanner.o bin/te_tendril.o bin/dd_data.o \
+		bin/dd_graph.o bin/dd_algo.o bin/dd_twine.o bin/di_lib.o bin/fe_lib.o \
+		bin/dd_utils.o bin/li_lineate.o src/fe.c \
+		-g -Wall -Wextra -o bin/fe
 
 scratch-fe-nll :
 	gcc src/fe_neo_lib_land.c src/fe_nll_narrator.c \

@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -77,6 +78,37 @@ bool find_entry(DIDictEntry *match, DDTwine *word, const char *path) {
 	if (line)
 		free(line);
 	fclose(fp);
+
+	return found;
+}
+
+bool find_next_entry(DIDictEntry *match, DDTwine *word, FILE *dict) {
+	char *line = NULL;
+	size_t len = 0;
+	ssize_t read;
+	bool found = false;
+	DDTwine tmp_str;
+	int result;
+
+	while ((read = getline(&line, &len, dict)) != -1) {
+		if (line[0] == ';' && line[1] == ';' && line[2] == ';') {
+			continue;
+		}
+		result = entry_comp(word, line);
+		if (result == 0) {
+			found = true;
+			dd_twine_init(&tmp_str);
+			dd_twine_from_chars_fixed(&tmp_str, line, strlen(line) + 1);
+			string_to_di_entry(&tmp_str, match);
+			dd_twine_destroy(&tmp_str);
+			break;
+		} else if (result == 1) {
+			break;
+		}
+	}
+
+	if (line)
+		free(line);
 
 	return found;
 }
@@ -170,8 +202,9 @@ int string_to_di_entry(DDTwine *str, DIDictEntry *entry) {
 
 	i = 0;
 	while (!entry_end_of_word(&str->chars[i])) {
-		if (!isupper(dd_twine_char_at(str, i))) 
+		if (!isupper(dd_twine_char_at(str, i)) && dd_twine_char_at(str, i) != '\'') {
 			return 1;
+		}
 		i++;
 	}
 	dd_twine_init(&tmp_str);
@@ -239,6 +272,107 @@ void di_entries_for_string(DDTwine *str, DDArrDIIndexedEntry *entries,
 		dd_twine_destroy(&tmp_str);
 	}
 	DD_FREE_ARRAY(&word_bounds);
+}
+
+/* 1) build array of twines from word bounds
+ * 2) sort
+ * 3) scan file word by word
+ * 4) if next word is a duplicate, reuse pron
+ * 5) resort by index
+ * 6) add prons in order
+ * */
+
+typedef struct {
+	DDTwineWB wb;
+	DDTwine tw;
+} TWWBPair;
+DD_DEF_ARRAY(TWWBPair, TWWBPair);
+
+static int comp_1(const void *a, const void *b) {
+	TWWBPair a_pair = *((TWWBPair *)a);
+	TWWBPair b_pair = *((TWWBPair *)b);
+	int blarg = strcmp(a_pair.tw.chars, b_pair.tw.chars);
+	return blarg;
+}
+
+static int comp_2(const void *a, const void *b) {
+	DDTwineWB wb_a = *((DDTwineWB *)a);
+	DDTwineWB wb_b = *((DDTwineWB *)b);
+	if (wb_a.start > wb_b.start) return 1;
+	if (wb_a.start < wb_b.start) return -1;
+	return 0;
+}
+
+static void deep_copy_dict_entry(DIDictEntry *target, DIDictEntry *entry) {
+	DISyllable tmp_syl;
+	int i;
+
+	init_di_dict_entry(target);
+
+	dd_twine_copy(&target->word, &entry->word);
+	target->variant = entry->variant;
+
+	for (i = 0; i < entry->pronunciation.size; i++) {
+		init_di_syllable(&tmp_syl);
+		dd_twine_copy(&tmp_syl.pron, &entry->pronunciation.elems[i].pron);
+		tmp_syl.stress = entry->pronunciation.elems[i].stress;
+		DD_ADD_ARRAY(&target->pronunciation, tmp_syl);
+	}
+}
+
+void di_entries_from_wbs(DDArrDIIndexedEntry *entries, int start,
+		DDArrDDTwineWB *word_bounds, DDTwine *str, FILE *dict) {
+
+	int i, j;
+	DDArrTWWBPair pairs;
+	TWWBPair tmp_pair;
+	DIDictEntry tmp_entry;
+	DIIndexedEntry tmp_indexed_entry;
+	DIIndexedEntry tmp_indexed_entry_2;
+	bool word_found;
+
+	DD_INIT_ARRAY(&pairs);
+
+	for (i = start; i < word_bounds->size; i++) {
+		dd_twine_init(&tmp_pair.tw);
+		tmp_pair.wb = word_bounds->elems[i]; 
+		dd_twine_from_chars_fixed(&tmp_pair.tw, &str->chars[tmp_pair.wb.start],
+				tmp_pair.wb.end - tmp_pair.wb.start);
+		dd_twine_to_upper_mut(&tmp_pair.tw);
+		DD_ADD_ARRAY(&pairs, tmp_pair);
+	}
+
+	qsort(pairs.elems, pairs.size, sizeof(TWWBPair), comp_1);
+
+	i = 0;
+	while (i < pairs.size) {
+		init_di_dict_entry(&tmp_entry);
+		word_found = find_next_entry(&tmp_entry, &pairs.elems[i].tw,
+				dict);
+		if (!word_found) {
+			printf("Could not find dict word: %s\n", pairs.elems[i].tw.chars);
+			exit(1);
+		}
+
+		tmp_indexed_entry.index = pairs.elems[i].wb.start;
+		tmp_indexed_entry.length = dd_twine_len(&pairs.elems[i].tw);
+		tmp_indexed_entry.entry = tmp_entry;
+		DD_ADD_ARRAY(entries, tmp_indexed_entry);
+
+		/* test for duplicates */
+		j = i + 1;
+		while (j < pairs.size && dd_twine_eq(&pairs.elems[i].tw, &pairs.elems[j].tw)) {
+			tmp_indexed_entry_2.index = pairs.elems[j].wb.start;
+			tmp_indexed_entry_2.length = dd_twine_len(&pairs.elems[i].tw);
+			deep_copy_dict_entry(&tmp_indexed_entry_2.entry, &tmp_entry);
+			DD_ADD_ARRAY(entries, tmp_indexed_entry_2);
+			j++;
+		}
+		i = j;
+	}
+
+	qsort(entries->elems, entries->size, sizeof(DIIndexedEntry), comp_2);
+	rewind(dict);
 }
 
 void free_di_dict_entry(DIDictEntry *di_dict_entry) {

@@ -95,6 +95,26 @@ void dd_twine_concat_mut(DDTwine *twa, DDTwine *twb) {
 	twa->length = len;
 }
 
+void dd_twine_concat_with_char_mut(DDTwine *twa, DDTwine *twb, char c) {
+	if (dd_twine_len(twa) == 0) {
+		dd_twine_concat_mut(twa, twb);
+	} else {
+		unsigned int i, j;
+		unsigned int len = dd_twine_len(twa) + dd_twine_len(twb) + 1;
+		twa->chars = (char *)reallocate(twa->chars,
+				sizeof(char) * dd_twine_len(twa) + 1,
+				sizeof(char) * (len + 1));
+		dd_twine_set_char_at(twa, c, dd_twine_len(twa));
+		i = dd_twine_len(twa) + 1;
+		for (j = 0; i < len; j++) {
+			dd_twine_set_char_at(twa, dd_twine_char_at(twb, j), i);
+			i++;
+		}
+		dd_twine_set_char_at(twa, '\0', len);
+		twa->length = len;
+	}
+}
+
 static bool is_non_word(char c) {
 	return !(isalnum(c) || c == '\'');
 }
@@ -113,6 +133,27 @@ void dd_twine_word_bounds(DDArrDDTwineWB *wb_arr, DDTwine *twa) {
 		bounds.start = i;
 		while (!is_non_word(dd_twine_char_at(twa, i)) &&
 				i < dd_twine_len(twa))
+			i++;
+		bounds.end = i;
+		DD_ADD_ARRAY(wb_arr, bounds);
+	}
+}
+
+void dd_twine_word_bounds_substr(DDArrDDTwineWB *wb_arr, DDTwine *twa,
+		int start, int end) {
+	int i;
+	DDTwineWB bounds;
+	bounds.start = start;
+
+	i = start;
+	while (i < end) {
+		while (is_non_word(dd_twine_char_at(twa, i)))
+			i++;
+		if (i > end)
+			break;
+		bounds.start = i;
+		while (!is_non_word(dd_twine_char_at(twa, i)) &&
+				i < end)
 			i++;
 		bounds.end = i;
 		DD_ADD_ARRAY(wb_arr, bounds);

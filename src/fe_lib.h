@@ -2,56 +2,24 @@
 #define fe_lib_h
 
 #include "dd_data.h"
+#include "dd_twine.h"
+#include "di_lib.h"
 #include "te_tendril.h"
 
-/* so uh, collection of entities
- * types of relations
- * relation from to
- * action on relation
- * entities:
- * 		you
- * 		workfriend
- * 		pres
- * 		celeb
- * 		mom
- */
+typedef struct FEstival {
+	TETendril *therm;
+	int therm_state;
+	DDTwine *raw;
+	DDArrDDTwineWB *word_bounds;
+	FILE *dict;
+	DDArrDIIndexedEntry *dict_entries;
+	DDArrInt *line_indices;
+} FEstival;
 
-typedef enum {
-	FE_REL_TYPE_PMC_EQUAL,
-	FE_REL_TYPE_SHOW_EQUAL,
-	FE_REL_TYPE_CELEB_PRES,
-	FE_REL_TYPE_PRES_CELEB,
-	FE_REL_TYPE_HAS_MOM,
-	FE_REL_TYPE_IS_MOM,
-	FE_REL_TYPE_CELEB_PPL,
-	FE_REL_TYPE_PPL_CELEB,
-	FE_REL_TYPE_PRES_PPL,
-	FE_REL_TYPE_PPL_PRES,
-} FERelType;
-
-typedef struct {
-	int id;
-	DDString name;
-} FEEntity;
-
-DD_DEF_ARRAY(FEEntity, FEEntity);
-
-typedef struct {
-	FERelType type;
-	int sub_id;
-	int obj_id;
-} FEEntityRelation;
-
-DD_DEF_ARRAY(FEEntityRelation, FEEntityRelation);
-
-typedef struct {
-	FERelType type;
-	DDString pres_particip;
-	DDstring past;
-} FERelationContent;
-
+void init_festival(FEstival *festival);
+void inaugurate_festival(FEstival *festival);
+void destroy_festival(FEstival *festival);
 void run_n_steps(TETendril *tendril, DDArrDDString *result,
 		int state, int n_steps);
 
 #endif
-

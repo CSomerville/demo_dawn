@@ -30,9 +30,12 @@ bool dd_twine_eq(DDTwine *twa, DDTwine *twb);
 void dd_twine_to_upper_mut(DDTwine *tw);
 void dd_twine_concat(DDTwine *target, DDTwine *twa, DDTwine *twb);
 void dd_twine_concat_mut(DDTwine *twa, DDTwine *twb);
+void dd_twine_concat_with_char_mut(DDTwine *twa, DDTwine *twb, char c);
 void dd_twine_copy(DDTwine *twa, DDTwine *twb);
 void dd_twine_split(DDArrDDTwine *tw_arr, DDTwine *twb, DDTwine *twc);
 void dd_twine_word_bounds(DDArrDDTwineWB *wb_arr, DDTwine *twa);
+void dd_twine_word_bounds_substr(DDArrDDTwineWB *wb_arr, DDTwine *twa,
+		int start, int end);
 void dd_twine_join(DDTwine *tw, DDArrDDTwine *tw_arr, DDTwine *between);
 int dd_arr_dd_twine_index_of(DDArrDDTwine *tws, DDTwine *tw);
 
