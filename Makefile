@@ -96,14 +96,18 @@ li_lineate : src/li_lineate.c src/li_lineate.h dd_data \
 		-g -Wall -Wextra -c -o bin/li_lineate.o
 
 fe_lib : src/fe_lib.h src/fe_lib.c dd_data dd_twine te_tendril \
-			dd_utils di_lib li_lineate 
+			dd_utils di_lib li_lineate fe_neo_lib_land \
+			fe_nll_narrator_2
 	gcc src/fe_lib.c \
 		-g -Wall -Wextra -c -o bin/fe_lib.o
 
 fe : src/fe.c fe_lib
 	gcc bin/te_scanner.o bin/te_tendril.o bin/dd_data.o \
 		bin/dd_graph.o bin/dd_algo.o bin/dd_twine.o bin/di_lib.o bin/fe_lib.o \
-		bin/dd_utils.o bin/li_lineate.o src/fe.c \
+		bin/dd_utils.o bin/li_lineate.o bin/fe_neo_lib_land.o \
+		bin/dd_twine_ball.tab.o bin/dd_twine_ball.lex.o \
+		bin/dd_twine_ball_lib.o							\
+		bin/fe_nll_narrator_2.o src/fe.c \
 		-g -Wall -Wextra -o bin/fe
 
 scratch-fe-nll :

@@ -5,6 +5,8 @@
 #include "fe_lib.h"
 #include "dd_twine.h"
 #include "li_lineate.h"
+#include "fe_neo_lib_land.h"
+#include "fe_nll_narrator_2.h"
 
 static void prepare_therm(TETendril **therm) {
 	TEScanner scanner;
@@ -20,10 +22,55 @@ static void prepare_therm(TETendril **therm) {
 	*therm = &tendrils.elems[0];
 }
 
+static void prepare_nll_world(FENLLWorld *nll_world) {
+	FENLLConfigureWorld conf;
+	DDString tmp;
+	DDArrDDString names;
+
+	DD_INIT_ARRAY(&names);
+	init_dd_string(&tmp);
+	give_to_dd_string(&tmp, "Joe", 3);
+	DD_ADD_ARRAY(&names, tmp);
+	init_dd_string(&tmp);
+	give_to_dd_string(&tmp, "Jess", 4);
+	DD_ADD_ARRAY(&names, tmp);
+	init_dd_string(&tmp);
+	give_to_dd_string(&tmp, "Jane", 4);
+	DD_ADD_ARRAY(&names, tmp);
+	init_dd_string(&tmp);
+	give_to_dd_string(&tmp, "Jules", 5);
+	DD_ADD_ARRAY(&names, tmp);
+	init_dd_string(&tmp);
+	give_to_dd_string(&tmp, "Jerr", 4);
+	DD_ADD_ARRAY(&names, tmp);
+	init_dd_string(&tmp);
+	give_to_dd_string(&tmp, "Jill", 4);
+	DD_ADD_ARRAY(&names, tmp);
+	init_dd_string(&tmp);
+	give_to_dd_string(&tmp, "Jack", 4);
+	DD_ADD_ARRAY(&names, tmp);
+
+	conf.height = 25;
+	conf.width = 25;
+	conf.num_population = 25;
+	conf.names = names;
+	conf.pocket_floor = 20.0;
+	conf.pocket_ceil = 100.0;
+	conf.amt_floor = 15.0;
+	conf.amt_ceil = 75.0;
+	conf.interest_floor = 0.01;
+	conf.interest_ceil = 0.05;
+	conf.mode = FE_NLL_MODE_SILENT;
+
+	fe_nll_init_world(nll_world, &conf);
+}
+
 void init_festival(FEstival *festival) {
 	festival->therm = DD_ALLOCATE(TETendril, 1);
 	prepare_therm(&festival->therm);
 	festival->therm_state = 0;
+	festival->nll_world = DD_ALLOCATE(FENLLWorld, 1);
+	prepare_nll_world(festival->nll_world);
 	festival->raw = DD_ALLOCATE(DDTwine, 1);
 	dd_twine_init(festival->raw);
 	festival->word_bounds = DD_ALLOCATE(DDArrDDTwineWB, 1);
@@ -68,6 +115,23 @@ static void advance_therm(FEstival *festival) {
 	DD_FREE_ARRAY(&strs);
 }
 
+static void advance_nll(FEstival *festival, int nsteps, int lander_index) {
+	int i;
+	DDArrDDTwine result_arr;
+
+	DD_INIT_ARRAY(&result_arr);
+	for (i = 0; i < nsteps; i++) {
+		fe_nll_tick(festival->nll_world);
+	}
+	narrate_from_turn_log(&result_arr, 
+			&festival->nll_world->populace.elems[lander_index]);
+	for (i = 0; i < result_arr.size; i++) {
+		dd_twine_concat_with_char_mut(festival->raw,
+				&result_arr.elems[i], ' ');
+	}
+
+}
+
 static void lineate_and_print(FEstival *festival) {
 	int furthest_word_bounds, orig_word_bounds_size,
 		dict_offset;
@@ -100,21 +164,15 @@ static void lineate_and_print(FEstival *festival) {
 }
 
 void inaugurate_festival(FEstival *festival) {
-
-	int i;
-	for (i = 0; i < 15; i++) {
-		advance_therm(festival);
-	}	
-	lineate_and_print(festival);
-	for (i = 0; i < 15; i++) {
-		advance_therm(festival);
-	}	
-	lineate_and_print(festival);
+	advance_nll(festival, 10, 3);
 }
 
 void destroy_festival(FEstival *festival) {
 	int i;
 	/* destroy therm */
+	fe_nll_free_world(festival->nll_world);
+	free(festival->nll_world);
+
 	dd_twine_destroy(festival->raw);
 	free(festival->raw);
 
