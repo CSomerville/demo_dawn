@@ -259,6 +259,7 @@ void dd_twine(void) {
 	DDTwine twa;
 	DDTwine twb;
 	DDTwine twc;
+	DDArrDDTwineWB wb_arr;
 
 	dd_twine_init(&twa);
 	dd_twine_init(&twb);
@@ -308,6 +309,27 @@ void dd_twine(void) {
 	dd_twine_init(&twa);
 	dd_twine_init(&twb);
 
+	DD_INIT_ARRAY(&wb_arr);
+	dd_twine_from_chars_fixed(&twa, "blarg unk nuu", 13);
+	dd_twine_word_bounds_substr(&wb_arr, &twa, 5, twa.length);
+	assert(wb_arr.elems[0].start == 6);
+	assert(wb_arr.elems[0].end == 9);
+	assert(wb_arr.elems[1].start == 10);
+	assert(wb_arr.elems[1].end == 13);
+	DD_FREE_ARRAY(&wb_arr);
+	dd_twine_destroy(&twa);
+	dd_twine_init(&twa);
+
+	DD_INIT_ARRAY(&wb_arr);
+	dd_twine_from_chars_fixed(&twa, "blarg 123.456 nuu", 17);
+	dd_twine_word_bounds_substr(&wb_arr, &twa, 5, twa.length);
+	assert(wb_arr.elems[0].start == 6);
+	assert(wb_arr.elems[0].end == 13);
+	assert(wb_arr.elems[1].start == 14);
+	assert(wb_arr.elems[1].end == 17);
+	DD_FREE_ARRAY(&wb_arr);
+	dd_twine_destroy(&twa);
+	dd_twine_init(&twa);
 	printf("success.\n");
 }
 

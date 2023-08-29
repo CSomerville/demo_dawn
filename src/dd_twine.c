@@ -152,7 +152,10 @@ void dd_twine_word_bounds_substr(DDArrDDTwineWB *wb_arr, DDTwine *twa,
 		if (i > end)
 			break;
 		bounds.start = i;
-		while (!is_non_word(dd_twine_char_at(twa, i)) &&
+		while ((!is_non_word(dd_twine_char_at(twa, i)) ||
+					(dd_twine_char_at(twa, i) == '.' && i+1 < end && 
+					 isdigit(dd_twine_char_at(twa, i+1))))
+					&&
 				i < end)
 			i++;
 		bounds.end = i;

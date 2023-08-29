@@ -165,6 +165,7 @@ static void lineate_and_print(FEstival *festival) {
 
 void inaugurate_festival(FEstival *festival) {
 	advance_nll(festival, 10, 3);
+	lineate_and_print(festival);
 }
 
 void destroy_festival(FEstival *festival) {

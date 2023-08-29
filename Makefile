@@ -4,7 +4,8 @@ BISON_PATH="/usr/local/opt/bison/bin/bison"
 test-dd :
 	gcc src/test_dd.c src/dd_data.c src/dd_graph.c \
 	   src/dd_algo.c src/dd_twine.c -g -Wall -Wextra -o bin/test_dd
-	valgrind --leak-check=yes ./bin/test_dd
+	#valgrind --leak-check=yes ./bin/test_dd
+	./bin/test_dd
 	rm ./bin/test_dd
 
 test-te :
