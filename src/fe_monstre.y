@@ -54,23 +54,23 @@ content:
 	DD_DEF_ARRAY(FEMonstreRelation, FEMonstreRelation);
 	DD_DEF_ARRAY(FEMonstreContent, FEMonstreContent);
 
-	struct FEMonstreData {
+	typedef struct {
 		FEMonstreMode mode;
 		DDArrDDTwine entities;
 		DDArrDDTwine relation_types;
 		DDArrFEMonstreRelation relations;
 		DDArrFEMonstreContent contents;
-	};
+	} FEMonstreData;
 }
 
 %define api.value.type {DDTwine *}
 
-%parse-param {struct FEMonstreData *accum}
+%parse-param {FEMonstreData *accum}
 
 %param {void *scanner}
 
 %code provides {
-	void accum_free(struct FEMonstreData *a);
+	void accum_free(FEMonstreData *a);
 }
 
 %code {
@@ -82,7 +82,7 @@ content:
 %token RELATION_TYPES
 %token RELATIONS
 %token CONTENT
-%token TWI
+%token MON_TWI
 
 %%
 
@@ -111,7 +111,7 @@ predicate :
 ;
 
 twines :
-		twines ',' TWI {  
+		twines ',' MON_TWI {  
 			switch (accum->mode) {
 				case FE_MONSTRE_MODE_ENTITY:
 					DD_ADD_ARRAY(&accum->entities, *($3));
@@ -122,7 +122,7 @@ twines :
 			}
 			free($3);
 		}
-	|	TWI { 
+	|	MON_TWI { 
 			switch (accum->mode) {
 				case FE_MONSTRE_MODE_ENTITY:
 					DD_ADD_ARRAY(&accum->entities, *($1));
@@ -141,12 +141,12 @@ triples :
 ;
 
 triple :
-	  '(' TWI ',' TWI ',' TWI ')' {
+	  '(' MON_TWI ',' MON_TWI ',' MON_TWI ')' {
 		switch (accum->mode) {
 			int n;
 			case FE_MONSTRE_MODE_RELATION:
-				FEMonstreRelation *rel;
-				rel = DD_ALLOCATE(FEMonstreRelation, 1);
+				{
+				FEMonstreRelation *rel = DD_ALLOCATE(FEMonstreRelation, 1);
 				n = dd_arr_dd_twine_index_of(&accum->relation_types, $2);
 				rel->relation_type = n;
 				n = dd_arr_dd_twine_index_of(&accum->entities, $4);
@@ -162,7 +162,9 @@ triple :
 				free($6);
 				free(rel);
 				break;
+				}
 			case FE_MONSTRE_MODE_CONTENT:
+				{
 				FEMonstreContent *con;
 				con = DD_ALLOCATE(FEMonstreContent, 1);
 				n = dd_arr_dd_twine_index_of(&accum->relation_types, $2);
@@ -176,6 +178,7 @@ triple :
 				free($6);
 				free(con);
 				break;
+				}
 		}
 	}
 
@@ -188,7 +191,7 @@ int monstreerror(void *yylval, const void *s, char const *msg)
 	return fprintf(stderr, "msg: %s\n", msg);
 }
 
-void accum_free(struct FEMonstreData *a) {
+void accum_free(FEMonstreData *a) {
 	int i;
 	if (!a)
 		return;

@@ -5,7 +5,7 @@
 5( ) add more lineation options
 6(X) fix dict find entries to only read file once
 7(X) clean up makefile: it's a mess.
-8( ) pronunciation for numbers
+8(X) pronunciation for numbers
 
 I(X) <requires 3> rewrite nll_narrator to be good and use DDTwine
 II( ) <requires 1> create pdf output

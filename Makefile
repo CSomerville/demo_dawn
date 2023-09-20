@@ -68,6 +68,19 @@ dd_twine_ball : src/dd_twine_ball.y src/dd_twine_ball.l dd_data \
 	gcc src/dd_twine_ball_lib.c \
 		-g -Wall -Wextra -c -o bin/dd_twine_ball_lib.o
 
+fe_monstre : src/fe_monstre.y src/fe_monstre.l src/fe_monstre_lib.h \
+			src/fe_monstre_lib.c dd_data dd_twine
+	$(BISON_PATH) -d -b fe_monstre --header=src/fe_monstre.tab.h \
+		-o src/fe_monstre.tab.c src/fe_monstre.y
+	flex --header-file=src/fe_monstre.lex.h -o \
+		src/fe_monstre.lex.c src/fe_monstre.l
+	gcc src/fe_monstre.tab.c \
+		-g -Wall -Wextra -c -o bin/fe_monstre.tab.o
+	gcc src/fe_monstre.lex.c \
+		-g -Wall -Wextra -c -o bin/fe_monstre.lex.o
+	gcc src/fe_monstre_lib.c \
+		-g -Wall -Wextra -c -o bin/fe_monstre_lib.o
+
 di_lib : src/di_lib.h src/di_lib.c dd_data dd_twine
 	gcc src/di_lib.c \
 		-g -Wall -Wextra -c -o bin/di_lib.o
@@ -98,7 +111,7 @@ li_lineate : src/li_lineate.c src/li_lineate.h dd_data \
 
 fe_lib : src/fe_lib.h src/fe_lib.c dd_data dd_twine te_tendril \
 			dd_utils di_lib li_lineate fe_neo_lib_land \
-			fe_nll_narrator_2
+			fe_nll_narrator_2 fe_monstre
 	gcc src/fe_lib.c \
 		-g -Wall -Wextra -c -o bin/fe_lib.o
 
@@ -108,6 +121,8 @@ fe : src/fe.c fe_lib
 		bin/dd_utils.o bin/li_lineate.o bin/fe_neo_lib_land.o \
 		bin/dd_twine_ball.tab.o bin/dd_twine_ball.lex.o \
 		bin/dd_twine_ball_lib.o							\
+		bin/fe_monstre.tab.o bin/fe_monstre.lex.o \
+		bin/fe_monstre_lib.o							\
 		bin/fe_nll_narrator_2.o src/fe.c \
 		-g -Wall -Wextra -o bin/fe
 

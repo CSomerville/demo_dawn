@@ -9,7 +9,5 @@ int main() {
 	init_festival(&festival);
 	inaugurate_festival(&festival);
 
-	printf("%s\n", festival.raw->chars);
-
 	destroy_festival(&festival);
 }

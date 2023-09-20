@@ -29,7 +29,7 @@ contents { return CONTENT; }
 	dd_twine_init(tmp_twine);
 	dd_twine_from_chars_dyn(tmp_twine, yytext);
 	*yylval = tmp_twine;
-	return TWI;
+	return MON_TWI;
 }
 
 \"[^"]*\" {
@@ -39,7 +39,7 @@ contents { return CONTENT; }
 	yytext_len = strlen(yytext);
 	dd_twine_from_chars_fixed(tmp_twine, &yytext[1], yytext_len - 2);
 	*yylval = tmp_twine;
-	return TWI;
+	return MON_TWI;
 }
 
 [[:space:]]	;

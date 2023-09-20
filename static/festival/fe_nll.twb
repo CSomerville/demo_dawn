@@ -42,7 +42,7 @@
 
 	fleeing_lander_does: (
 		"they drive in desperate emission shocked flight from",
-		"they sprint fearfully between towered-high palettes from");
+		"they sprint fearfully between towered-high pallets from");
 
 	lander_has_no_goal: (
 		"moves utterly motivationlessly");

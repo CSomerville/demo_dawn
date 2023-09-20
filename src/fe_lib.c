@@ -7,6 +7,7 @@
 #include "li_lineate.h"
 #include "fe_neo_lib_land.h"
 #include "fe_nll_narrator_2.h"
+#include "fe_monstre_lib.h"
 
 static void prepare_therm(TETendril **therm) {
 	TEScanner scanner;
@@ -65,12 +66,34 @@ static void prepare_nll_world(FENLLWorld *nll_world) {
 	fe_nll_init_world(nll_world, &conf);
 }
 
+static void prepare_monstre(FEMonstreData *dat,
+		FEMonstreState *monstre_state) {
+	FILE *f;
+
+	fe_monstre_init(monstre_state, dat);
+	f = fopen("./static/festival/gram.monst", "r");
+	if (!f) {
+		fprintf(stderr, "Could not open monstre data\n");
+		exit(1);
+	}
+
+	fe_monstre_parse(dat, f);
+	fclose(f);
+
+	fe_monstre_pick_initial_entity(monstre_state, dat);
+}
+
 void init_festival(FEstival *festival) {
 	festival->therm = DD_ALLOCATE(TETendril, 1);
 	prepare_therm(&festival->therm);
 	festival->therm_state = 0;
 	festival->nll_world = DD_ALLOCATE(FENLLWorld, 1);
 	prepare_nll_world(festival->nll_world);
+	festival->monstre_dat = DD_ALLOCATE(FEMonstreData, 1);
+	festival->monstre_state = DD_ALLOCATE(FEMonstreState, 1);
+	festival->last_monstre_read = -1;
+
+	prepare_monstre(festival->monstre_dat, festival->monstre_state);
 	festival->raw = DD_ALLOCATE(DDTwine, 1);
 	dd_twine_init(festival->raw);
 	festival->word_bounds = DD_ALLOCATE(DDArrDDTwineWB, 1);
@@ -84,6 +107,8 @@ void init_festival(FEstival *festival) {
 	DD_INIT_ARRAY(festival->dict_entries);
 	festival->line_indices = DD_ALLOCATE(DDArrInt, 1);
 	DD_INIT_ARRAY(festival->line_indices);
+	DD_ADD_ARRAY(festival->line_indices, 0);
+	festival->last_lineated_index = 0;
 }
 
 static void advance_therm(FEstival *festival) {
@@ -129,7 +154,29 @@ static void advance_nll(FEstival *festival, int nsteps, int lander_index) {
 		dd_twine_concat_with_char_mut(festival->raw,
 				&result_arr.elems[i], ' ');
 	}
+}
 
+static void copy_monstre_over(FEstival *festival) {
+	int i;
+	for (i = festival->last_monstre_read+1; i < festival->monstre_state->collect.size; i++) {
+		dd_twine_concat_with_char_mut(festival->raw,
+				&festival->monstre_state->collect.elems[i], ' ');
+		festival->last_monstre_read++;
+	}
+}
+
+static void print_to_console(FEstival *festival) {
+	DDTwine tmp;
+	int start, end;
+	while (festival->last_lineated_index < festival->line_indices->size - 1) {
+		dd_twine_init(&tmp);
+		start = festival->line_indices->elems[festival->last_lineated_index];
+		end = festival->line_indices->elems[festival->last_lineated_index + 1];
+		dd_twine_from_chars_fixed(&tmp, &festival->raw->chars[start], end - start);
+		printf("%s\n", dd_twine_chars(&tmp));
+		festival->last_lineated_index++;
+		dd_twine_destroy(&tmp);
+	}
 }
 
 static void lineate_and_print(FEstival *festival) {
@@ -160,11 +207,17 @@ static void lineate_and_print(FEstival *festival) {
 		dict_offset = *brk_idx;
 		DD_ADD_ARRAY(festival->line_indices, 
 				festival->dict_entries->elems[*brk_idx].index);
+		print_to_console(festival);
 	}
 }
 
 void inaugurate_festival(FEstival *festival) {
+	int i;
 	advance_nll(festival, 10, 3);
+	for (i = 0; i < 20; i++) {
+		fe_monstre_tick(festival->monstre_state, festival->monstre_dat);
+	}
+	copy_monstre_over(festival);
 	lineate_and_print(festival);
 }
 
@@ -176,6 +229,10 @@ void destroy_festival(FEstival *festival) {
 
 	dd_twine_destroy(festival->raw);
 	free(festival->raw);
+
+	fe_monstre_teardown(festival->monstre_state, festival->monstre_dat);
+	free(festival->monstre_state);
+	free(festival->monstre_dat);
 
 	fclose(festival->dict);
 	for (i = 0; i < festival->dict_entries->size; i++) {
