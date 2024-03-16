@@ -88,6 +88,7 @@ void fe_monstre_tick(FEMonstreState *state, FEMonstreData *dat) {
 	DD_ADD_ARRAY(&state->collect, tmp);
 	dd_twine_init(&tmp);
 
+	DD_FREE_ARRAY(&indices);
 }
 
 void fe_monstre_parse(FEMonstreData *dat, FILE *f) {

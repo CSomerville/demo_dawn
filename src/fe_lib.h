@@ -8,6 +8,7 @@
 #include "fe_neo_lib_land.h"
 #include "fe_monstre_lib.h"
 #include "fe_monstre.tab.h"
+#include "fe_book.h"
 
 typedef struct FEstival {
 	TETendril *therm;
@@ -16,6 +17,7 @@ typedef struct FEstival {
 	FEMonstreData *monstre_dat;
 	FEMonstreState *monstre_state;
 	int last_monstre_read;
+	FEBook *book;
 
 	DDTwine *raw;
 	DDArrDDTwineWB *word_bounds;

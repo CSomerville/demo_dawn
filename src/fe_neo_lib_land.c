@@ -1816,3 +1816,11 @@ void fe_nll_free_world(FENLLWorld *world) {
 	DD_FREE_ARRAY(&world->event_log);
 	DD_FREE_ARRAY(&world->map);
 }
+
+void fe_nll_free_conf(FENLLConfigureWorld *conf) {
+	int i;
+	for (i = 0; i < conf->names.size; i++) {
+		free_dd_chars(&conf->names.elems[i]);
+	}
+	DD_FREE_ARRAY(&conf->names);
+}

@@ -273,5 +273,6 @@ void print_turn_log(FENLLander *lander);
 void fe_nll_init_world(FENLLWorld *world, FENLLConfigureWorld *conf);
 void fe_nll_tick(FENLLWorld *world);
 void fe_nll_free_world(FENLLWorld *world);
+void fe_nll_free_conf(FENLLConfigureWorld *conf);
 
 #endif

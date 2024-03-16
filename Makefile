@@ -1,4 +1,3 @@
-LINK_BISON="-L/usr/local/opt/bison/lib"
 BISON_PATH="/usr/local/opt/bison/bin/bison"
 
 test-dd :
@@ -57,7 +56,7 @@ dd_twine : src/dd_twine.c src/dd_twine.h dd_data
 dd_twine_ball : src/dd_twine_ball.y src/dd_twine_ball.l dd_data \
 				dd_twine src/dd_twine_ball_lib.c				\
 				src/dd_twine_ball_lib.h
-	$(BISON_PATH) -d -b dd_twine_ball --header=src/dd_twine_ball.tab.h \
+	bison -d -b dd_twine_ball --header=src/dd_twine_ball.tab.h \
 		-o src/dd_twine_ball.tab.c src/dd_twine_ball.y
 	flex --header-file=src/dd_twine_ball.lex.h -o \
 		src/dd_twine_ball.lex.c src/dd_twine_ball.l
@@ -70,7 +69,7 @@ dd_twine_ball : src/dd_twine_ball.y src/dd_twine_ball.l dd_data \
 
 fe_monstre : src/fe_monstre.y src/fe_monstre.l src/fe_monstre_lib.h \
 			src/fe_monstre_lib.c dd_data dd_twine
-	$(BISON_PATH) -d -b fe_monstre --header=src/fe_monstre.tab.h \
+	bison -d -b fe_monstre --header=src/fe_monstre.tab.h \
 		-o src/fe_monstre.tab.c src/fe_monstre.y
 	flex --header-file=src/fe_monstre.lex.h -o \
 		src/fe_monstre.lex.c src/fe_monstre.l
@@ -111,9 +110,13 @@ li_lineate : src/li_lineate.c src/li_lineate.h dd_data \
 
 fe_lib : src/fe_lib.h src/fe_lib.c dd_data dd_twine te_tendril \
 			dd_utils di_lib li_lineate fe_neo_lib_land \
-			fe_nll_narrator_2 fe_monstre
+			fe_nll_narrator_2 fe_monstre fe_book
 	gcc src/fe_lib.c \
 		-g -Wall -Wextra -c -o bin/fe_lib.o
+
+fe_book : src/fe_book.h src/fe_book.c dd_twine
+	gcc src/fe_book.c \
+		-g -Wall -Wextra -lhpdf -c -o bin/fe_book.o
 
 fe : src/fe.c fe_lib
 	gcc bin/te_scanner.o bin/te_tendril.o bin/dd_data.o \
@@ -123,8 +126,9 @@ fe : src/fe.c fe_lib
 		bin/dd_twine_ball_lib.o							\
 		bin/fe_monstre.tab.o bin/fe_monstre.lex.o \
 		bin/fe_monstre_lib.o							\
+		bin/fe_book.o									\
 		bin/fe_nll_narrator_2.o src/fe.c \
-		-g -Wall -Wextra -o bin/fe
+		-g -Wall -Wextra -o bin/fe -lhpdf
 
 scratch-fe-nll :
 	gcc src/fe_neo_lib_land.c src/fe_nll_narrator.c \

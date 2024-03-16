@@ -64,6 +64,7 @@ static void prepare_nll_world(FENLLWorld *nll_world) {
 	conf.mode = FE_NLL_MODE_SILENT;
 
 	fe_nll_init_world(nll_world, &conf);
+	fe_nll_free_conf(&conf);
 }
 
 static void prepare_monstre(FEMonstreData *dat,
@@ -92,6 +93,8 @@ void init_festival(FEstival *festival) {
 	festival->monstre_dat = DD_ALLOCATE(FEMonstreData, 1);
 	festival->monstre_state = DD_ALLOCATE(FEMonstreState, 1);
 	festival->last_monstre_read = -1;
+	festival->book = DD_ALLOCATE(FEBook, 1);
+	fe_book_init(festival->book, "./test.pdf");
 
 	prepare_monstre(festival->monstre_dat, festival->monstre_state);
 	festival->raw = DD_ALLOCATE(DDTwine, 1);
@@ -154,6 +157,7 @@ static void advance_nll(FEstival *festival, int nsteps, int lander_index) {
 		dd_twine_concat_with_char_mut(festival->raw,
 				&result_arr.elems[i], ' ');
 	}
+	dd_arr_dd_twine_destroy(&result_arr);
 }
 
 static void copy_monstre_over(FEstival *festival) {
@@ -173,6 +177,7 @@ static void print_to_console(FEstival *festival) {
 		start = festival->line_indices->elems[festival->last_lineated_index];
 		end = festival->line_indices->elems[festival->last_lineated_index + 1];
 		dd_twine_from_chars_fixed(&tmp, &festival->raw->chars[start], end - start);
+		fe_book_add_text(festival->book, &tmp);
 		printf("%s\n", dd_twine_chars(&tmp));
 		festival->last_lineated_index++;
 		dd_twine_destroy(&tmp);
@@ -183,6 +188,8 @@ static void lineate_and_print(FEstival *festival) {
 	int furthest_word_bounds, orig_word_bounds_size,
 		dict_offset;
 	int *brk_idx = DD_ALLOCATE(int, 1);
+
+	fe_book_add_page(festival->book);
 
 	orig_word_bounds_size = festival->word_bounds->size;
 	if (orig_word_bounds_size) {
@@ -209,6 +216,7 @@ static void lineate_and_print(FEstival *festival) {
 				festival->dict_entries->elems[*brk_idx].index);
 		print_to_console(festival);
 	}
+	free(brk_idx);
 }
 
 void inaugurate_festival(FEstival *festival) {
@@ -219,6 +227,7 @@ void inaugurate_festival(FEstival *festival) {
 	}
 	copy_monstre_over(festival);
 	lineate_and_print(festival);
+	fe_book_write(festival->book);
 }
 
 void destroy_festival(FEstival *festival) {
@@ -233,6 +242,9 @@ void destroy_festival(FEstival *festival) {
 	fe_monstre_teardown(festival->monstre_state, festival->monstre_dat);
 	free(festival->monstre_state);
 	free(festival->monstre_dat);
+
+	fe_book_free(festival->book);
+	free(festival->book);
 
 	fclose(festival->dict);
 	for (i = 0; i < festival->dict_entries->size; i++) {
