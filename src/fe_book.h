@@ -9,6 +9,25 @@ typedef struct {
 	double x2;
 	double y1;
 	double y2;
+} FEBookBoundingRect;
+
+typedef struct {
+	bool fits_page;
+	enum {
+		FIRST_THIRD,
+		SECOND_THIRD,
+		THIRD_THIRD,
+	} left_pos;
+	bool is_left;
+	bool is_right;
+	bool is_bottom;
+} FEBookPlacement;
+
+typedef struct {
+	double x1;
+	double x2;
+	double y1;
+	double y2;
 	double font_size;
 	DDTwine text;
 } FEBookLine;

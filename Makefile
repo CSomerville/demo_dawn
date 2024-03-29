@@ -114,7 +114,7 @@ fe_lib : src/fe_lib.h src/fe_lib.c dd_data dd_twine te_tendril \
 	gcc src/fe_lib.c \
 		-g -Wall -Wextra -c -o bin/fe_lib.o
 
-fe_book : src/fe_book.h src/fe_book.c dd_twine
+fe_book : src/fe_book.h src/fe_book.c dd_twine dd_utils
 	gcc src/fe_book.c \
 		-g -Wall -Wextra -lhpdf -c -o bin/fe_book.o
 

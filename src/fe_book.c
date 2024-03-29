@@ -1,8 +1,11 @@
 #include <setjmp.h>
 #include <stdio.h>
+#include <ctype.h>
+#include <string.h>
 #include "hpdf.h"
 #include "dd_twine.h"
 #include "fe_book.h"
+#include "dd_utils.h"
 
 jmp_buf env;
 
@@ -74,43 +77,243 @@ void fe_book_add_page(FEBook *fe_book) {
 		.elems[fe_book->virtual_pages.size-1];
 }
 
-static void add_text_straight_left(FEBook *fe_book, DDTwine *text) {
+static void lineate(DDArrFEBookLine *lines, FEBook *fe_book,
+		FEBookBoundingRect *rect, DDTwine *text) {
+	printf("entering lineate:%s\n", text->chars);
+	int idx = 0;
+	int start = 0;
+	int ctr = 0;
+	int line_height = fe_book->current_font_size + 3;
+	double width, allowed_width;
+	char *str, *last_str = NULL;
 	FEBookLine line;
-	double text_width;
-	int line_height;
-
-	dd_twine_copy(&line.text, text);
-	text_width = HPDF_Page_TextWidth(fe_book->current_page,
-			dd_twine_chars(&line.text));
-	line.font_size = fe_book->current_font_size;
-	
-	line_height = fe_book->current_font_size + 5;
-	/* what follows to be replaced */
-	if (fe_book->current_v_page->last_line == NULL) {
-		line.x1 = 0;
-		line.x2 = text_width;
-		line.y1 = fe_book->current_v_page->height;
-		line.y2 = line.y1 - line.font_size;
-	} else if (fe_book->current_v_page->last_line->y1 - line_height < 0) {
-		fe_book_add_page(fe_book);
-		line.x1 = 0;
-		line.x2 = text_width;
-		line.y1 = fe_book->current_v_page->height;
-		line.y2 = line.y1 - line.font_size;
+	allowed_width = fe_book->current_v_page->width - rect->x1;
+	while (idx < dd_twine_len(text)) {
+		if (isspace(dd_twine_chars(text)[idx]) || idx + 1 == dd_twine_len(text)) {
+			str = strndup(&dd_twine_chars(text)[start], idx - start);
+			width = HPDF_Page_TextWidth(fe_book->current_page, str);
+			if (width < allowed_width) {
+				last_str = str;
+				while (isspace(dd_twine_chars(text)[idx]))
+					idx++;
+			} else {
+			dd_twine_from_chars_dyn(&line.text, last_str);
+			last_str = NULL;
+			idx = dd_twine_len(&line.text) + start;
+			line.x1 = rect->x1;
+			line.x2 = HPDF_Page_TextWidth(fe_book->current_page,
+					dd_twine_chars(&line.text));
+			line.y1 = rect->y1 - (line_height * ctr);
+			line.y2 = line.y1 - line_height;
+			DD_ADD_ARRAY(lines, line);
+			ctr++;
+			while (isspace(dd_twine_chars(text)[idx]))
+				idx++;
+			start = idx;
+		}
 	} else {
-		line.x1 = 0;
-		line.x2 = text_width;
-		line.y1 = fe_book->current_v_page->last_line->y1 - line_height;
-		line.y2 = line.y1 - line.font_size;
+		idx++;
 	}
+}
+	dd_twine_from_chars_dyn(&line.text, last_str);
+	line.x1 = rect->x1;
+	line.x2 = HPDF_Page_TextWidth(fe_book->current_page,
+			dd_twine_chars(&line.text));
+	line.y1 = rect->y1 - (line_height * ctr);
+	line.y2 = line.y1 - line_height;
+	DD_ADD_ARRAY(lines, line);
+	free(str);
+}
 
+static void add_line(FEBook *fe_book, FEBookBoundingRect *rect,
+		DDTwine *text) {
+	FEBookLine line;
+	line.x1 = rect->x1;
+	line.x2 = rect->x2;
+	line.y1 = rect->y1;
+	line.y2 = rect->y2;
+	dd_twine_copy(&line.text, text);
+	line.font_size = fe_book->current_font_size;
 	DD_ADD_ARRAY(&fe_book->current_v_page->contents, line);
 	fe_book->current_v_page->last_line = &fe_book->current_v_page
 		->contents.elems[fe_book->current_v_page->contents.size-1];
 }
 
+static void add_text_straight_left(FEBook *fe_book, DDTwine *text) {
+	FEBookBoundingRect rect;
+	double text_width;
+	int line_height;
+
+	text_width = HPDF_Page_TextWidth(fe_book->current_page,
+			dd_twine_chars(text));
+	
+	line_height = fe_book->current_font_size + 5;
+	/* what follows to be replaced */
+	if (fe_book->current_v_page->last_line == NULL) {
+		rect.x1 = 0;
+		rect.x2 = text_width;
+		rect.y1 = fe_book->current_v_page->height;
+		rect.y2 = rect.y1 - fe_book->current_font_size;
+	} else if (fe_book->current_v_page->last_line->y1 - line_height < 0) {
+		fe_book_add_page(fe_book);
+		rect.x1 = 0;
+		rect.x2 = text_width;
+		rect.y1 = fe_book->current_v_page->height;
+		rect.y2 = rect.y1 - fe_book->current_font_size;
+	} else {
+		rect.x1 = 0;
+		rect.x2 = text_width;
+		rect.y1 = fe_book->current_v_page->last_line->y1 - line_height;
+		rect.y2 = rect.y1 - fe_book->current_font_size;
+	}
+
+	add_line(fe_book, &rect, text);
+}
+
+/* if left page and none previous
+ * 		place top left
+ * else
+ * 		try to place in range
+ *
+ * if try to place fails
+ * 		if right
+ * 			if line is too long for page
+ * 				if is in left two-thirds
+ *	 				lineate
+ * 				else if on left page
+ * 					jump to right and lineate
+ * 				else
+ * 					new page and lineate
+ * 			if left in first third
+ * 				lineate
+ * 			else if left in center third
+ * 				clamp right
+ * 			else if on left page
+ * 				jump to right page
+ * 			else
+ * 				new page
+ * 		if bottom
+ * 			new page
+ */
+
+#define MEANDER_X 0.3
+#define MEANDER_Y 0.05
+
+static void meandering_place_top_left(FEBookBoundingRect *rect,
+		FEBook *fe_book, DDTwine *text) {
+	rect->x1 = rand_double() * MEANDER_X * fe_book->current_v_page->width;
+	rect->x2 = HPDF_Page_TextWidth(fe_book->current_page,
+			dd_twine_chars(text));
+	rect->y1 = fe_book->current_v_page->height - rand_double() * 
+		MEANDER_Y * fe_book->current_v_page->height;
+	rect->y2 = rect->y1 - fe_book->current_font_size;
+}
+
+static void meandering_place_next(FEBookBoundingRect *rect,
+		FEBook *fe_book, DDTwine *text) {
+	rect->x1 = fe_book->current_v_page->last_line->x1 - 4 + rand_double() 
+		* MEANDER_X * fe_book->current_v_page->width;
+	rect->x2 = rect->x1 + HPDF_Page_TextWidth(fe_book->current_page,
+			dd_twine_chars(text));
+	rect->y1 = fe_book->current_v_page->last_line->y2 + 4 
+		- rand_double() * MEANDER_Y * fe_book->current_v_page->height;
+	rect->y2 = rect->y1 - fe_book->current_font_size;
+}
+
+static void get_placement(FEBookPlacement *placement, 
+		FEBookBoundingRect *rect, FEBook *fe_book) {
+	placement->fits_page = fe_book->current_v_page->width >
+		rect->x2 - rect->x1;
+
+	if (rect->x1 < fe_book->current_v_page->width / 3) {
+		placement->left_pos = FIRST_THIRD;
+	} else if (rect->x1 < (fe_book->current_v_page->width / 3) * 2) {
+		placement->left_pos = SECOND_THIRD;
+	} else {
+		placement->left_pos = THIRD_THIRD;
+	}
+
+	placement->is_right = rect->x2 > fe_book->current_v_page->width;
+	placement->is_bottom = rect->y2 < 0;
+}
+
+
+static void add_meandering_text(FEBook *fe_book, DDTwine *text) {
+	FEBookBoundingRect rect;
+	FEBookPlacement placement;
+	DDArrFEBookLine lines;
+	bool is_lineated = false;
+	int i;
+
+	DD_INIT_ARRAY(&lines);
+
+	if (fe_book->current_v_page->last_line == NULL) {
+		meandering_place_top_left(&rect, fe_book, text);
+	} else {
+		meandering_place_next(&rect, fe_book, text);
+	}
+
+	get_placement(&placement, &rect, fe_book);
+	
+	if (placement.is_right) {
+		if (!placement.fits_page) {
+			if (placement.left_pos != THIRD_THIRD) {
+				lineate(&lines, fe_book, &rect, text);
+				is_lineated = true;
+			} else {
+				if (fe_book->virtual_pages.size % 2 == 1) {
+					rect.y1 = fe_book->current_v_page->last_line->y1;
+					rect.y2 = fe_book->current_v_page->last_line->y2;
+					fe_book_add_page(fe_book);
+					lineate(&lines, fe_book, &rect, text);
+					is_lineated = true;
+				} else {
+					fe_book_add_page(fe_book);
+					meandering_place_top_left(&rect, fe_book, text);
+					lineate(&lines, fe_book, &rect, text);
+					is_lineated = true;
+				}
+			}
+		} else {
+			if (placement.left_pos == FIRST_THIRD) {
+				lineate(&lines, fe_book, &rect, text);
+				is_lineated = true;
+			} else if (placement.left_pos == SECOND_THIRD) {
+				lineate(&lines, fe_book, &rect, text);
+				is_lineated = true;
+			} else {
+				if (fe_book->virtual_pages.size % 2 == 1) {
+					rect.y1 = fe_book->current_v_page->last_line->y1;
+					rect.y2 = fe_book->current_v_page->last_line->y2;
+					fe_book_add_page(fe_book);
+					rect.x1 = rand_double() * MEANDER_X 
+						* fe_book->current_v_page->width;
+					rect.x2 = HPDF_Page_TextWidth(fe_book->current_page,
+						dd_twine_chars(text));
+				} else {
+					fe_book_add_page(fe_book);
+					meandering_place_top_left(&rect, fe_book, text);
+				}
+			}
+		}
+	} else if (placement.is_bottom) {
+		fe_book_add_page(fe_book);
+		meandering_place_top_left(&rect, fe_book, text);
+	}
+	if (is_lineated) {
+		for (i = 0; i < lines.size; i++) {
+			DD_ADD_ARRAY(&fe_book->current_v_page->contents, 
+					lines.elems[i]);
+			fe_book->current_v_page->last_line = &fe_book->current_v_page
+				->contents.elems[fe_book->current_v_page->contents.size-1];
+		}
+	} else {
+		add_line(fe_book, &rect, text);
+	}
+}
+
 void fe_book_add_text(FEBook *fe_book, DDTwine *text) {
-	add_text_straight_left(fe_book, text);
+	add_meandering_text(fe_book, text);
 }
 
 static double computed_margin_bottom(FEBook *fe_book) {
