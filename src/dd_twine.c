@@ -53,6 +53,10 @@ bool dd_twine_eq(DDTwine *twa, DDTwine *twb) {
 	return true;
 }
 
+bool dd_twine_eq_chars(DDTwine *twa, const char *chars) {
+	return dd_twine_chars(twa) != NULL && strcmp(dd_twine_chars(twa), chars) == 0;
+}
+
 void dd_twine_to_upper_mut(DDTwine *tw) {
 	unsigned int i;
 	for (i = 0; i < dd_twine_len(tw); i++)

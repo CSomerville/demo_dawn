@@ -1,0 +1,29 @@
+{
+	for_dollars: (
+		"stimming for dollars",
+		"chumming for dollars",
+		"jiggling for dollars");
+
+	for_the_dollars: (
+		"stimming for the dollars",
+		"chumming for the dollars",
+		"jiggling for the dollars");
+
+	about_currency: (
+		"that pres juices");
+
+	lyric: (
+		"girl's paws got raw",
+		"boy's straws all flaws",
+		"boy's craws straight blah",
+		"girl's maws my trough");
+
+	medium: (
+		"ring out",
+		"throb out");
+
+	has_song: (
+		"threads of celeb with the",
+		"scent of celeb with the",
+		"flag of the land that inspired the");
+}

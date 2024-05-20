@@ -27,6 +27,7 @@ char *dd_twine_chars(DDTwine *tw);
 char dd_twine_char_at(DDTwine *tw, unsigned int i);
 void dd_twine_set_char_at(DDTwine *tw, char c, unsigned int i);
 bool dd_twine_eq(DDTwine *twa, DDTwine *twb);
+bool dd_twine_eq_chars(DDTwine *twa, const char *chars);
 void dd_twine_to_upper_mut(DDTwine *tw);
 void dd_twine_concat(DDTwine *target, DDTwine *twa, DDTwine *twb);
 void dd_twine_concat_mut(DDTwine *twa, DDTwine *twb);

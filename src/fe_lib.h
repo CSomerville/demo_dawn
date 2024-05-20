@@ -9,14 +9,18 @@
 #include "fe_monstre_lib.h"
 #include "fe_monstre.tab.h"
 #include "fe_book.h"
+#include "fe_rain.h"
 
 typedef struct FEstival {
+	DDTwine *test;
+
 	TETendril *therm;
 	int therm_state;
 	FENLLWorld *nll_world;
 	FEMonstreData *monstre_dat;
 	FEMonstreState *monstre_state;
 	int last_monstre_read;
+	FERain *fe_rain;
 	FEBook *book;
 
 	DDTwine *raw;

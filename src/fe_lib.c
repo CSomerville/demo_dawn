@@ -8,6 +8,9 @@
 #include "fe_neo_lib_land.h"
 #include "fe_nll_narrator_2.h"
 #include "fe_monstre_lib.h"
+#include "dd_twine_ball.tab.h"
+#include "dd_twine_ball_lib.h"
+#include "fe_rain.h"
 
 static void prepare_therm(TETendril **therm) {
 	TEScanner scanner;
@@ -85,6 +88,9 @@ static void prepare_monstre(FEMonstreData *dat,
 }
 
 void init_festival(FEstival *festival) {
+	festival->test = DD_ALLOCATE(DDTwine, 1);
+	dd_twine_init(festival->test);
+	
 	festival->therm = DD_ALLOCATE(TETendril, 1);
 	prepare_therm(&festival->therm);
 	festival->therm_state = 0;
@@ -93,6 +99,8 @@ void init_festival(FEstival *festival) {
 	festival->monstre_dat = DD_ALLOCATE(FEMonstreData, 1);
 	festival->monstre_state = DD_ALLOCATE(FEMonstreState, 1);
 	festival->last_monstre_read = -1;
+	festival->fe_rain = DD_ALLOCATE(FERain, 1);
+	fe_rain_init(festival->fe_rain);
 	festival->book = DD_ALLOCATE(FEBook, 1);
 	fe_book_init(festival->book, "./test.pdf");
 
@@ -206,7 +214,8 @@ static void lineate_and_print(FEstival *festival) {
 			festival->word_bounds, festival->raw, festival->dict);
 
 	while (true) {
-		li_lineate_trochee_2(brk_idx, dict_offset, festival->dict_entries);
+		/*li_lineate_trochee_2(brk_idx, dict_offset, festival->dict_entries);*/
+		li_lineate_2_or_3(brk_idx, dict_offset, festival->dict_entries);
 
 		if (*brk_idx == -1) {
 			break;
@@ -219,7 +228,7 @@ static void lineate_and_print(FEstival *festival) {
 	free(brk_idx);
 }
 
-void inaugurate_festival(FEstival *festival) {
+void test_years(FEstival *festival) {
 	int i;
 	advance_nll(festival, 10, 3);
 	for (i = 0; i < 20; i++) {
@@ -230,8 +239,30 @@ void inaugurate_festival(FEstival *festival) {
 	fe_book_write(festival->book);
 }
 
+void test_microseconds(FEstival *festival) {
+	int i;
+	for (i = 0; i < 9; i++) {
+		do {
+			fe_rain_advance(festival->raw, festival->fe_rain);
+		} while (festival->fe_rain->save_point != FE_RAIN_SONG_MEDIUM);
+	}
+	
+	lineate_and_print(festival);
+	fe_book_write(festival->book);
+}
+
+void inaugurate_festival(FEstival *festival) {
+	if (dd_twine_eq_chars(festival->test, "microseconds"))
+		test_microseconds(festival);
+	else
+		test_years(festival);
+}
+
 void destroy_festival(FEstival *festival) {
 	int i;
+	dd_twine_destroy(festival->test);
+	free(festival->test);
+
 	/* destroy therm */
 	fe_nll_free_world(festival->nll_world);
 	free(festival->nll_world);
@@ -242,6 +273,9 @@ void destroy_festival(FEstival *festival) {
 	fe_monstre_teardown(festival->monstre_state, festival->monstre_dat);
 	free(festival->monstre_state);
 	free(festival->monstre_dat);
+
+	fe_rain_destroy(festival->fe_rain);
+	free(festival->fe_rain);
 
 	fe_book_free(festival->book);
 	free(festival->book);

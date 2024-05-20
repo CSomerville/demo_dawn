@@ -72,6 +72,8 @@
 	void print_twine_ball(DDTwineBallItem *item);
 	bool dd_twine_ball_obj_get(DDTwineBallItem **item, DDTwineBallObj *o,
 		DDTwine *key);
+	bool dd_twine_ball_select_twine(DDTwine *val, DDTwineBallItem *root,
+			const char *key);
 }
 
 %code {
@@ -230,3 +232,23 @@ bool dd_twine_ball_obj_get(DDTwineBallItem **item, DDTwineBallObj *o,
 	return false;
 }
 
+bool dd_twine_ball_select_twine(DDTwine *val, DDTwineBallItem *root,
+		const char *key) {
+	int i;
+	DDTwine tmp_key;
+	DDTwineBallItem *item;
+
+	dd_twine_init(&tmp_key);
+	dd_twine_from_chars_dyn(&tmp_key, key);
+
+	if (!dd_twine_ball_obj_get(&item, root->value.o, &tmp_key) ||
+				item->type != DD_TWINE_BALL_LIST) {
+		return false;
+	}
+	i = rand() % item->value.l->items.size;
+	if (item->value.l->items.elems[i].type != DD_TWINE_BALL_TWINE) {
+		return false;
+	}
+	dd_twine_copy(val, item->value.l->items.elems[i].value.t);
+	dd_twine_destroy(&tmp_key);
+}

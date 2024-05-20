@@ -108,9 +108,13 @@ li_lineate : src/li_lineate.c src/li_lineate.h dd_data \
 	gcc src/li_lineate.c \
 		-g -Wall -Wextra -c -o bin/li_lineate.o
 
+fe_rain : src/fe_rain.c src/fe_rain.h dd_twine dd_twine_ball 
+	gcc src/fe_rain.c \
+		-g -Wall -Wextra -c -o bin/fe_rain.o
+
 fe_lib : src/fe_lib.h src/fe_lib.c dd_data dd_twine te_tendril \
 			dd_utils di_lib li_lineate fe_neo_lib_land \
-			fe_nll_narrator_2 fe_monstre fe_book
+			fe_nll_narrator_2 fe_monstre fe_book fe_rain
 	gcc src/fe_lib.c \
 		-g -Wall -Wextra -c -o bin/fe_lib.o
 
@@ -118,7 +122,7 @@ fe_book : src/fe_book.h src/fe_book.c dd_twine dd_utils
 	gcc src/fe_book.c \
 		-g -Wall -Wextra -lhpdf -c -o bin/fe_book.o
 
-fe : src/fe.c fe_lib
+fe : src/fe.c fe_lib dd_twine
 	gcc bin/te_scanner.o bin/te_tendril.o bin/dd_data.o \
 		bin/dd_graph.o bin/dd_algo.o bin/dd_twine.o bin/di_lib.o bin/fe_lib.o \
 		bin/dd_utils.o bin/li_lineate.o bin/fe_neo_lib_land.o \
@@ -126,6 +130,7 @@ fe : src/fe.c fe_lib
 		bin/dd_twine_ball_lib.o							\
 		bin/fe_monstre.tab.o bin/fe_monstre.lex.o \
 		bin/fe_monstre_lib.o							\
+		bin/fe_rain.o							\
 		bin/fe_book.o									\
 		bin/fe_nll_narrator_2.o src/fe.c \
 		-g -Wall -Wextra -o bin/fe -lhpdf
