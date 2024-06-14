@@ -2,15 +2,18 @@
 	for_dollars: (
 		"stimming for dollars",
 		"chumming for dollars",
-		"jiggling for dollars");
+		"jawing for dollars",
+		"moaning for dollars");
 
 	for_the_dollars: (
 		"stimming for the dollars",
 		"chumming for the dollars",
-		"jiggling for the dollars");
+		"jawing for the dollars",
+		"moaning for the dollars");
 
 	about_currency: (
-		"that pres juices");
+		"that pres juices",
+		"that pres puffs up");
 
 	lyric: (
 		"girl's paws got raw",
@@ -20,10 +23,17 @@
 
 	medium: (
 		"ring out",
-		"throb out");
+		"throb out",
+		"pulse out");
 
 	has_song: (
 		"threads of celeb with the",
 		"scent of celeb with the",
 		"flag of the land that inspired the");
+
+	temporal_connector: (
+		"in tempo knit with",
+		"its levels synced with",
+		"its rushed pace locked to",
+		"in time-spray sculpting");
 }

@@ -197,7 +197,7 @@ static void add_text_straight_left(FEBook *fe_book, DDTwine *text) {
  */
 
 #define MEANDER_X 0.3
-#define MEANDER_Y 0.05
+#define MEANDER_Y 0.075
 
 static void meandering_place_top_left(FEBookBoundingRect *rect,
 		FEBook *fe_book, DDTwine *text) {

@@ -15,11 +15,18 @@ typedef enum {
 	FE_RAIN_TO_BUY,
 	FE_RAIN_SONG_MEDIUM,
 	FE_RAIN_TEMPORAL_CONNECTOR,
+
+	FE_RAIN_1_NULL,
+	FE_RAIN_1_MAKE_REMEMBER,
+	FE_RAIN_1_FOR_DOLLARS,
+	FE_RAIN_1_WORK_SONG,
 } FERainSavePoint;
 
 typedef struct {
 	DDTwineBallData rain_data;
 	FERainSavePoint save_point;
+	int level;
+	int level_0_ctr;
 } FERain;
 
 void fe_rain_init(FERain *fe_rain);

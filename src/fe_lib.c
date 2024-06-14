@@ -241,10 +241,11 @@ void test_years(FEstival *festival) {
 
 void test_microseconds(FEstival *festival) {
 	int i;
-	for (i = 0; i < 9; i++) {
-		do {
-			fe_rain_advance(festival->raw, festival->fe_rain);
-		} while (festival->fe_rain->save_point != FE_RAIN_SONG_MEDIUM);
+	for (i = 0; i < 300; i++) {
+		fe_rain_advance(festival->raw, festival->fe_rain);
+		/*do {*/
+			/*fe_rain_advance(festival->raw, festival->fe_rain);*/
+		/*} while (festival->fe_rain->save_point != FE_RAIN_SONG_MEDIUM);*/
 	}
 	
 	lineate_and_print(festival);

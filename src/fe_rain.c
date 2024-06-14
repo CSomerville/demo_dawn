@@ -3,15 +3,16 @@
 #include "dd_twine_ball.tab.h"
 #include "dd_twine_ball_lib.h"
 
-static void for_dollars(DDTwine *out_str, FERain *fe_rain) {
+static void do_step(DDTwine *out_str, FERain *fe_rain,
+		const char *twb_key, FERainSavePoint next_save_point) {
 	DDTwine tmp;
 	dd_twine_init(&tmp);
 
-	dd_twine_ball_select_twine(&tmp, fe_rain->rain_data.root, "for_dollars");
+	dd_twine_ball_select_twine(&tmp, fe_rain->rain_data.root, twb_key);
 	dd_twine_concat_with_char_mut(out_str, &tmp, ' ');
 	dd_twine_destroy(&tmp);
 
-	fe_rain->save_point = FE_RAIN_FOR_DOLLARS;
+	fe_rain->save_point = next_save_point;
 }
 
 static void for_the_dollars(DDTwine *out_str, FERain *fe_rain) {
@@ -105,7 +106,7 @@ static void temporal_connector(DDTwine *out_str, FERain *fe_rain) {
 	DDTwine tmp;
 	dd_twine_init(&tmp);
 
-	dd_twine_from_chars_dyn(&tmp, "over");
+	dd_twine_ball_select_twine(&tmp, fe_rain->rain_data.root, "temporal_connector");
 	dd_twine_concat_with_char_mut(out_str, &tmp, ' ');
 	dd_twine_destroy(&tmp);
 
@@ -115,19 +116,32 @@ static void temporal_connector(DDTwine *out_str, FERain *fe_rain) {
 void fe_rain_init(FERain *fe_rain) {
 	dd_twine_ball_read(&fe_rain->rain_data, "./static/festival/rain.twb");
 	fe_rain->save_point = FE_RAIN_NULL;
+	fe_rain->level = 0;
+	fe_rain->level_0_ctr = 0;
 }
 
 void fe_rain_destroy(FERain *fe_rain) {
 	dd_twine_ball_data_destroy(&fe_rain->rain_data);
 }
 
-void fe_rain_advance(DDTwine *out_str, FERain *fe_rain) {
+static void check_level_0(FERain *fe_rain) {
+	if (fe_rain->level_0_ctr < 4 ||
+			(fe_rain->level_0_ctr < 7 && rand() % 3 < 1)) {
+		fe_rain->level_0_ctr++;
+	} else {
+		fe_rain->level = 1;
+		fe_rain->save_point = FE_RAIN_1_NULL;
+	}
+}
+
+static void advance_level_0(DDTwine *out_str, FERain *fe_rain) {
 	switch (fe_rain->save_point) {
 		case FE_RAIN_NULL:
 			if (rand() % 3 < 1)
 				for_the_dollars(out_str, fe_rain);
 			else
-				for_dollars(out_str, fe_rain);
+				do_step(out_str, fe_rain, "for_dollars",
+						FE_RAIN_FOR_DOLLARS);
 			break;
 		case FE_RAIN_FOR_DOLLARS:
 			if (rand() % 2 < 1)
@@ -166,7 +180,37 @@ void fe_rain_advance(DDTwine *out_str, FERain *fe_rain) {
 			if (rand() % 3 < 1)
 				for_the_dollars(out_str, fe_rain);
 			else
-				for_dollars(out_str, fe_rain);
+				do_step(out_str, fe_rain, "for_dollars",
+						FE_RAIN_FOR_DOLLARS);
+			check_level_0(fe_rain);
+			break;
+	}
+}
+
+static void advance_level_1(DDTwine *out_str, FERain *fe_rain) {
+	switch (fe_rain->save_point) {
+		case FE_RAIN_1_NULL:
+			do_step(out_str, fe_rain, "make_remember",
+					FE_RAIN_1_MAKE_REMEMBER);
+			break;
+		case FE_RAIN_1_MAKE_REMEMBER:
+			do_step(out_str, fe_rain, "for_dollars",
+					FE_RAIN_1_FOR_DOLLARS);
+			break;
+		case FE_RAIN_1_FOR_DOLLARS:
+			do_step(out_str, fe_rain, "work_song",
+					FE_RAIN_1_WORK_SONG);
+			break;
+	}
+}
+
+void fe_rain_advance(DDTwine *out_str, FERain *fe_rain) {
+	switch(fe_rain->level) {
+		case 0:
+			advance_level_0(out_str, fe_rain);
+			break;
+		case 1:
+			advance_level_1(out_str, fe_rain);
 			break;
 	}
 }
