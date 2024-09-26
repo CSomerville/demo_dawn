@@ -546,7 +546,7 @@ static void deep_copy_dict_entry(DIDictEntry *target, DIDictEntry *entry) {
 void di_entries_from_wbs(DDArrDIIndexedEntry *entries, int start,
 		DDArrDDTwineWB *word_bounds, DDTwine *str, FILE *dict) {
 
-	int i, j;
+	int i, j, pair_start;
 	DDArrTWWBPair pairs;
 	TWWBPair tmp_pair;
 	DIDictEntry tmp_entry;
@@ -559,8 +559,15 @@ void di_entries_from_wbs(DDArrDIIndexedEntry *entries, int start,
 	for (i = start; i < word_bounds->size; i++) {
 		dd_twine_init(&tmp_pair.tw);
 		tmp_pair.wb = word_bounds->elems[i]; 
-		dd_twine_from_chars_fixed(&tmp_pair.tw, &str->chars[tmp_pair.wb.start],
-				tmp_pair.wb.end - tmp_pair.wb.start);
+
+		/* handle leading quote */
+		if (str->chars[tmp_pair.wb.start] == '\\' && str->chars[tmp_pair.wb.start + 1] == '\"')
+			pair_start = tmp_pair.wb.start + 2;
+		else
+			pair_start = tmp_pair.wb.start;
+
+		dd_twine_from_chars_fixed(&tmp_pair.tw, &str->chars[pair_start],
+				tmp_pair.wb.end - pair_start);
 		dd_twine_to_upper_mut(&tmp_pair.tw);
 		DD_ADD_ARRAY(&pairs, tmp_pair);
 	}

@@ -185,6 +185,7 @@ static void print_to_console(FEstival *festival) {
 		start = festival->line_indices->elems[festival->last_lineated_index];
 		end = festival->line_indices->elems[festival->last_lineated_index + 1];
 		dd_twine_from_chars_fixed(&tmp, &festival->raw->chars[start], end - start);
+		dd_twine_remove_mut(&tmp, '\\');
 		fe_book_add_text(festival->book, &tmp);
 		printf("%s\n", dd_twine_chars(&tmp));
 		festival->last_lineated_index++;
@@ -241,7 +242,7 @@ void test_years(FEstival *festival) {
 
 void test_microseconds(FEstival *festival) {
 	int i;
-	for (i = 0; i < 300; i++) {
+	for (i = 0; i < 200; i++) {
 		fe_rain_advance(festival->raw, festival->fe_rain);
 		/*do {*/
 			/*fe_rain_advance(festival->raw, festival->fe_rain);*/

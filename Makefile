@@ -56,7 +56,7 @@ dd_twine : src/dd_twine.c src/dd_twine.h dd_data
 dd_twine_ball : src/dd_twine_ball.y src/dd_twine_ball.l dd_data \
 				dd_twine src/dd_twine_ball_lib.c				\
 				src/dd_twine_ball_lib.h
-	bison -d -b dd_twine_ball --header=src/dd_twine_ball.tab.h \
+	$(BISON_PATH) -d -b dd_twine_ball --header=src/dd_twine_ball.tab.h \
 		-o src/dd_twine_ball.tab.c src/dd_twine_ball.y
 	flex --header-file=src/dd_twine_ball.lex.h -o \
 		src/dd_twine_ball.lex.c src/dd_twine_ball.l
@@ -69,7 +69,7 @@ dd_twine_ball : src/dd_twine_ball.y src/dd_twine_ball.l dd_data \
 
 fe_monstre : src/fe_monstre.y src/fe_monstre.l src/fe_monstre_lib.h \
 			src/fe_monstre_lib.c dd_data dd_twine
-	bison -d -b fe_monstre --header=src/fe_monstre.tab.h \
+	$(BISON_PATH) -d -b fe_monstre --header=src/fe_monstre.tab.h \
 		-o src/fe_monstre.tab.c src/fe_monstre.y
 	flex --header-file=src/fe_monstre.lex.h -o \
 		src/fe_monstre.lex.c src/fe_monstre.l
@@ -141,7 +141,7 @@ scratch-fe-nll :
 		-g -Wall -Wextra -o bin/scratch_nll
 
 monstre-scratch :
-	bison -d -b fe_monstre src/fe_monstre.y
+	$(BISON_PATH) -d -b fe_monstre src/fe_monstre.y
 	flex --header-file=fe_monstre.lex.h -o fe_monstre.lex.c \
 		src/fe_monstre.l
 	mv fe_monstre* src/
@@ -156,7 +156,7 @@ monstre-scratch :
 		src/monstre_scratch.c -o bin/monstre_scratch
 
 dd-twine-ball :
-	bison -d -b dd_twine_ball src/dd_twine_ball.y
+	$(BISON_PATH) -d -b dd_twine_ball src/dd_twine_ball.y
 	flex --header-file=dd_twine_ball.lex.h -o \
 		dd_twine_ball.lex.c src/dd_twine_ball.l
 	mv dd_twine_ball.* src

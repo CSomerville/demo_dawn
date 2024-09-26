@@ -1,25 +1,23 @@
 {
 	for_dollars: (
 		"stimming for dollars",
-		"chumming for dollars",
-		"jawing for dollars",
-		"moaning for dollars");
+		"revving for dollars",
+		"pleading for dollars");
 
 	for_the_dollars: (
 		"stimming for the dollars",
-		"chumming for the dollars",
-		"jawing for the dollars",
-		"moaning for the dollars");
+		"revving for the dollars",
+		"pleading for the dollars");
 
 	about_currency: (
 		"that pres juices",
 		"that pres puffs up");
 
 	lyric: (
-		"girl's paws got raw",
-		"boy's straws all flaws",
-		"boy's craws straight blah",
-		"girl's maws my trough");
+		"\"girl's paws got raw\"",
+		"\"boy's straws all flaws\"",
+		"\"boy's craw's straight blah\"",
+		"\"girl's maws my trough\"");
 
 	medium: (
 		"ring out",
@@ -33,7 +31,25 @@
 
 	temporal_connector: (
 		"in tempo knit with",
-		"its levels synced with",
-		"its rushed pace locked to",
-		"in time-spray sculpting");
+		"its thuds synced up with",
+		"its cray pace locked to",
+		"in time-spray dousing");
+
+	make_remember: (
+		"pres throat gassing \"you member",
+		"pres lips venting \"remember",
+		"pres brows giving \"forget not");
+
+	how_dollars: (
+		"you using old ways",
+		"by ancient methods",
+		"in trad headgear working");
+
+	who_sings: (
+		"my stupendous wife belting",
+		"my prim daughter lip synching",
+		"my sporty boy roaring");
+
+	speech_ending: (
+		"\" the rhetor's acidic squawks fading under");
 }

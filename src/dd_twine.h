@@ -39,6 +39,7 @@ void dd_twine_word_bounds_substr(DDArrDDTwineWB *wb_arr, DDTwine *twa,
 		int start, int end);
 void dd_twine_join(DDTwine *tw, DDArrDDTwine *tw_arr, DDTwine *between);
 int dd_arr_dd_twine_index_of(DDArrDDTwine *tws, DDTwine *tw);
+void dd_twine_remove_mut(DDTwine *tw, char c);
 
 void dd_twine_destroy(DDTwine *tw);
 void dd_arr_dd_twine_destroy(DDArrDDTwine *tws);

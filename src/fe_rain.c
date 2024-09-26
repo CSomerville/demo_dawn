@@ -125,8 +125,8 @@ void fe_rain_destroy(FERain *fe_rain) {
 }
 
 static void check_level_0(FERain *fe_rain) {
-	if (fe_rain->level_0_ctr < 4 ||
-			(fe_rain->level_0_ctr < 7 && rand() % 3 < 1)) {
+	if (fe_rain->level_0_ctr < 2 ||
+			(fe_rain->level_0_ctr < 5 && rand() % 3 < 1)) {
 		fe_rain->level_0_ctr++;
 	} else {
 		fe_rain->level = 1;
@@ -159,11 +159,7 @@ static void advance_level_0(DDTwine *out_str, FERain *fe_rain) {
 				to_buy(out_str, fe_rain);
 			break;
 		case FE_RAIN_TO_BUY:
-			if (rand() % 2 < 1)
-				song_going(out_str, fe_rain, 1);
-			else
-				has_song(out_str, fe_rain);
-			break;
+			has_song(out_str, fe_rain);
 		case FE_RAIN_HAS_SONG:
 			song_going(out_str, fe_rain, 1);
 			break;
@@ -175,6 +171,7 @@ static void advance_level_0(DDTwine *out_str, FERain *fe_rain) {
 			break;
 		case FE_RAIN_SONG_MEDIUM:
 			temporal_connector(out_str, fe_rain);
+			check_level_0(fe_rain);
 			break;
 		case FE_RAIN_TEMPORAL_CONNECTOR:
 			if (rand() % 3 < 1)
@@ -182,7 +179,6 @@ static void advance_level_0(DDTwine *out_str, FERain *fe_rain) {
 			else
 				do_step(out_str, fe_rain, "for_dollars",
 						FE_RAIN_FOR_DOLLARS);
-			check_level_0(fe_rain);
 			break;
 	}
 }
@@ -198,8 +194,24 @@ static void advance_level_1(DDTwine *out_str, FERain *fe_rain) {
 					FE_RAIN_1_FOR_DOLLARS);
 			break;
 		case FE_RAIN_1_FOR_DOLLARS:
-			do_step(out_str, fe_rain, "work_song",
-					FE_RAIN_1_WORK_SONG);
+			do_step(out_str, fe_rain, "how_dollars",
+					FE_RAIN_1_HOW_DOLLARS);
+			break;
+		case FE_RAIN_1_HOW_DOLLARS:
+			do_step(out_str, fe_rain, "who_sings",
+					FE_RAIN_1_WHO_SINGS);
+			break;
+		case FE_RAIN_1_WHO_SINGS:
+			do_step(out_str, fe_rain, "lyric",
+					FE_RAIN_1_SONG_GOING);
+			break;
+		case FE_RAIN_1_SONG_GOING:
+			do_step(out_str, fe_rain, "speech_ending",
+					FE_RAIN_1_SPEECH_ENDING);
+			break;
+		case FE_RAIN_1_SPEECH_ENDING:
+			do_step(out_str, fe_rain, "make_remember",
+					FE_RAIN_1_MAKE_REMEMBER);
 			break;
 	}
 }

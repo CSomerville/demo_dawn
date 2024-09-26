@@ -155,7 +155,10 @@ void dd_twine_word_bounds_substr(DDArrDDTwineWB *wb_arr, DDTwine *twa,
 			i++;
 		if (i > end)
 			break;
-		bounds.start = i;
+		if (i > 1 && dd_twine_char_at(twa, i-1) == '\"' && dd_twine_char_at(twa, i-2) == '\\')
+			bounds.start = i - 2;
+		else
+			bounds.start = i;
 		while ((!is_non_word(dd_twine_char_at(twa, i)) ||
 					(dd_twine_char_at(twa, i) == '.' && i+1 < end && 
 					 isdigit(dd_twine_char_at(twa, i+1))))
@@ -196,4 +199,28 @@ void dd_arr_dd_twine_destroy(DDArrDDTwine *tws) {
 		dd_twine_destroy(&tws->elems[i]);
 	}
 	DD_FREE_ARRAY(tws);
+}
+
+void dd_twine_remove_mut(DDTwine *tw, char c) {
+	int i, j, to_remove;
+	char *mem;
+
+	to_remove = 0;
+	for (i = 0; i < tw->length; i++) {
+		if (dd_twine_char_at(tw, i) == c)
+			to_remove++;
+	}
+
+	if (to_remove > 0) {
+		mem = DD_ALLOCATE(char, tw->length + 1 - to_remove);
+		for (i = j = 0; i < tw->length; i++) {
+			if (dd_twine_char_at(tw, i) != c) {
+				mem[j] = dd_twine_char_at(tw, i);
+				j++;
+			}
+		}
+		mem[j] = '\0';
+		tw->chars = mem;
+		tw->length = j;
+	}
 }
